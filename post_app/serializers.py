@@ -21,7 +21,7 @@ class PostSerializer(serializers.ModelSerializer):
 class GetPostSerializer(serializers.ModelSerializer):
     class Meta:
         model=Post
-        fields = ('id', 'title', 'content', 'image') 
+        fields = ('id', 'title', 'content', 'image','user') 
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,5 +42,10 @@ class LikeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user  
         return super().create(validated_data)
+
+class GetLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Like
+        fields = ('id','created_at','post') 
 
     

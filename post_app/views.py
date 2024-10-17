@@ -5,16 +5,13 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework import status
 from .models import Post, Comment, Like
-from .serializers import (
-    PostSerializer,
-    CommentSerializer,
-    LikeSerializer,
-    GetPostSerializer,
-)
+from user.models import User
+from .serializers import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from .paginations import CustomPagination
+from django.shortcuts import get_object_or_404
 
 
 class PostView(APIView):
@@ -34,19 +31,21 @@ class PostView(APIView):
                 {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-    def get(self, request):
-        post = Post.objects.filter(user=request.user)
-        print(request.user)
-        if post:
-            serializers = GetPostSerializer(post, many=True)
-            return Response({"user": serializers.data}, status=status.HTTP_200_OK)
-        return Response(
-            {"error": "Not any post found of this User"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+
+    def get(self, request, user_id=None):
+        paginator = CustomPagination()
+        if user_id is None:
+            posts = Post.objects.filter(user=request.user) 
+        else:
+            user = get_object_or_404(User, id=user_id)  
+            posts = Post.objects.filter(user=user)  
+        paginated_posts = paginator.paginate_queryset(posts, request)
+        serializer = GetPostSerializer(paginated_posts, many=True)
+        return paginator.get_paginated_response(serializer.data)
+ 
 
     def put(self, request, post_id):
-        post = Post.objects.get(id=post_id)
+        post = get_object_or_404(Post,id=post_id)
         serializer = PostSerializer(post, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -59,14 +58,7 @@ class PostView(APIView):
         )
 
     def delete(self, request, post_id):
-
-        try:
-            post = Post.objects.get(id=post_id)
-        except:
-            return Response(
-                {"error": "Post Does not exist"}, status=status.HTTP_404_NOT_FOUND
-            )
-
+        post = get_object_or_404(Post,id=post_id)
         post.delete()
         return Response(
             {"message": "Post Deleted Successfully"}, status=status.HTTP_200_OK
@@ -75,17 +67,15 @@ class PostView(APIView):
 
 class CommentView(APIView):
     permission_classes = [IsAuthenticated]
-    pagination_class = [CustomPagination]
+    
 
     def post(self, request, post_id):
-        try:
-            post = Post.objects.get(id=post_id) 
+            post = get_object_or_404(Post,id=post_id) 
             data = request.data.copy()
             data["post"] = post_id  
             serializer = CommentSerializer(
                 data=request.data, context={"request": request, "post": post}
             )
-
             if serializer.is_valid():
                 serializer.save()  
                 return Response(
@@ -96,37 +86,25 @@ class CommentView(APIView):
                     {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
                 )
 
-        except Post.DoesNotExist:
-            return Response(
-                {"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND
-            )
-
     def get(self, request, post_id):
-        try:
-            post = Post.objects.get(id=post_id)
-            comments = Comment.objects.filter(post=post)  
-            serializer = CommentSerializer(comments, many=True)
-
-            return Response({"data": serializer.data}, status=status.HTTP_200_OK)
-
-        except Post.DoesNotExist:
-            return Response(
-                {"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND
-            )
+        paginator=CustomPagination()
+        post = get_object_or_404(Post, id=post_id)
+        comments = Comment.objects.filter(post=post)  
+        paginated_posts=paginator.paginate_queryset(comments,request)
+        serializer = CommentSerializer(paginated_posts, many=True)
+        return paginator.get_paginated_response(serializer.data)
+         
 
     def delete(self, request, comment_id):
-        comment = Comment.objects.filter(id=comment_id)
-        if comment == None:
-            return Response(
-                {"message": "comment not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+        comment = get_object_or_404(Comment, id=comment_id)
         comment.delete()
         return Response(
             {"message": "Comment Deleted Successfully"}, status=status.HTTP_200_OK
         )
 
+
     def put(self, request, comment_id):
-        comment = Comment.objects.get(id=comment_id)
+        comment = get_object_or_404(Comment, id=comment_id)
         serializer = CommentSerializer(comment, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -146,34 +124,30 @@ class LikeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Retrieve all Like objects
+        paginator = CustomPagination()
         likes = Like.objects.all()
-        serializer = LikeSerializer(likes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        paginated_post = paginator.paginate_queryset(likes,request)
+        serializer = GetLikeSerializer(paginated_post, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, post_id):
-        # Check if the post exists
-        try:
-            post = Post.objects.get(id=post_id)
-        except Post.DoesNotExist:
-            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        # Prepare data for serializer
-        data = request.data.copy()  # Copy request data
-        data['post'] = post.id  # Associate with the post
-
-        # Instantiate the serializer with the request context
-        serializer = LikeSerializer(data=data, context={'request': request})
-
+        post = get_object_or_404(Post, id=post_id)
+        serializer = LikeSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()  # Save the like (user will be set automatically)
+            serializer.save(post=post, user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, post_id, like_id):
+        # Retrieve the post or return a 404 if it does not exist
+        post = get_object_or_404(Post, id=post_id)
 
+        # Retrieve the like or return a 404 if it does not exist
+        like = get_object_or_404(Like, id=like_id, post=post)
 
+        # Delete the like
+        like.delete()
 
-
-
-
-# Create your views here.
+        # Return a success response
+        return Response({"message": "Like deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
