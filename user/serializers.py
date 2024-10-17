@@ -89,25 +89,9 @@ class SendResetPasswordEmailSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         email = attrs.get("email")
-        if User.objects.filter(email=email).exists():
-            user = User.objects.get(email=email)
-            user_id = urlsafe_base64_encode(force_bytes(user.id))
-            token = PasswordResetTokenGenerator().make_token(user)
-            link = "http://localhost:3000/api/user/reset/" + user_id + "/" + token
-            print(link)
-            body = " This is your link to reset password " + link
-
-            data = {
-                "subject": "Reset Your Password",
-                "body": body,
-                "to_email": user.email,
-            }
-            print("outside function")
-            Util.send_mail(data)
-            return attrs
-
-        else:
-            return serializers.ValidationError("You are not Registered")
+        if not User.objects.filter(email=email).exists():
+            raise serializers.ValidationError("You are not registered.")
+        return attrs
 
 
 class ResetPasswordSerializer(serializers.Serializer):
@@ -135,7 +119,7 @@ class ResetPasswordSerializer(serializers.Serializer):
         id = smart_str(urlsafe_base64_decode(user_id))
         user = User.objects.get(id=id)
         if not PasswordResetTokenGenerator().check_token(user, token):
-            raise serializers.ValidationError("Token is noe matched or expired")
+            raise serializers.ValidationError("Token is not matched or expired")
         user.set_password(password)
         user.save()
         return attrs
