@@ -118,7 +118,7 @@ class SendResetPasswordEmail(APIView):
             user = User.objects.get(email=email)
             user_id = urlsafe_base64_encode(force_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
-            reset_link = f"{request.scheme}://{request.get_host()}/api/user/reset/{user_id}/{token}"
+            reset_link = f"{request.scheme}://{request.get_host()}/user/password/reset/{user_id}/{token}"
             body = f"This is your link to reset password: {reset_link}"
             print(reset_link)
             email_data = {
@@ -147,4 +147,4 @@ class ResetPassword(APIView):
             {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
 
-# Create your views here.
+

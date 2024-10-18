@@ -49,9 +49,7 @@ class SignupSerializer(serializers.ModelSerializer):
 
     def create(self, validate_data):
         validate_data.pop('confirm_password')
-
         user = User.objects.create(**validate_data)
-        
         user.set_password(validate_data["password"])
         user.save()
         self.send_confirmation_email(user)
@@ -86,11 +84,7 @@ class UpdateSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True)
     
     def validate(self, data):
-        
         new_password = data.get("new_password")
-        
-        
-        
         validate_password(new_password, None)
         return data
         
