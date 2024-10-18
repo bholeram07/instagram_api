@@ -54,7 +54,18 @@ class SignupSerializer(serializers.ModelSerializer):
         
         user.set_password(validate_data["password"])
         user.save()
+        self.send_confirmation_email(user)
         return user
+    
+    def send_confirmation_email(self, user):
+        message = f'Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit'
+        email_data = {
+                "subject": "Welcome message",
+                "body": message,
+                "to_email": user.email,
+            }
+        Util.send_mail(email_data)
+
 
 
 class UserSerializer(serializers.ModelSerializer):
