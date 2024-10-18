@@ -5,7 +5,6 @@ import os
 
 
 class Util:
-    print("here in util")
     @staticmethod
     def send_mail(data):
         email= EmailMessage(

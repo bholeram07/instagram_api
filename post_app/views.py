@@ -132,22 +132,19 @@ class LikeView(APIView):
 
     def post(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
-        serializer = LikeSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save(post=post, user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        try:
+            serializer = LikeSerializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                serializer.save(post=post, user=request.user)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except:
+            return Response( "already created", status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, post_id, like_id):
-        # Retrieve the post or return a 404 if it does not exist
         post = get_object_or_404(Post, id=post_id)
-
-        # Retrieve the like or return a 404 if it does not exist
         like = get_object_or_404(Like, id=like_id, post=post)
 
-        # Delete the like
         like.delete()
-
-        # Return a success response
         return Response({"message": "Like deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
