@@ -13,6 +13,9 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+    
+    class Meta:
+        db_table = "Post"
 
 
 #comment Model
@@ -25,7 +28,9 @@ class Comment(models.Model):
     
     def __str__(self):
         return f'{self.user} comment {self.post}'
-
+    
+    class Meta:
+        db_table = "Comment"
 
 #like Model
 class Like(models.Model):
@@ -35,8 +40,11 @@ class Like(models.Model):
     updated_at = models.DateTimeField(auto_now = True)
     class Meta:
         unique_together = ('post', 'user') 
+        db_table = 'Like'
         
     def __str__(self):    
         return f'{self.user} liked {self.post}'
+    
+   
 
 

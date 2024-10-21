@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'post_app',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist'
 ]
 
 import os
@@ -75,8 +76,8 @@ ROOT_URLCONF = 'instagram_api.urls'
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=2),  # Access token expires after 15 minutes
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Refresh token expires after 7 days
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Access token expires after 15 minutes
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=2),     # Refresh token expires after 7 days
     'ROTATE_REFRESH_TOKENS': True,                   # Allows the refresh token to be rotated (issue a new one)
     'BLACKLIST_AFTER_ROTATION': True,                # Blacklist the old token after rotation
     'ALGORITHM': 'HS256',                            # Default algorithm for encoding
@@ -105,12 +106,20 @@ WSGI_APPLICATION = 'instagram_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'django',
+        'USER': 'postgres',
+        'PASSWORD': '12345678',
+        'HOST': 'localhost',
+        'PORT': '5432'
     }
 }
+    
+    
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':[
         'rest_framework_simplejwt.authentication.JWTAuthentication',

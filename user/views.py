@@ -8,7 +8,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from .utils import *
-
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 from rest_framework.response import Response
@@ -96,6 +96,7 @@ class UpdatePassword(APIView):
             if user.check_password(serializer.validated_data["current_password"]):
                 user.set_password(serializer.validated_data["new_password"])
                 user.save()
+                OutstandingToken.objects.filter(user=user).delete()
                 return Response(
                     {"message": "password updated successfully"},
                     status=status.HTTP_202_ACCEPTED,
