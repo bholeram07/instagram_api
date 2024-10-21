@@ -17,14 +17,29 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from user import urls
-from post_app import urls
+# from post_app import urls
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework.routers import DefaultRouter
+from post_app import views
+
+from post_app.views import PostViewSet,CommentViewSet,LikeView
+router = DefaultRouter()
+router.register('posts', PostViewSet) 
+router.register('comments', CommentViewSet)  
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/', include('user.urls')),
-    path('user/post/', include('post_app.urls'))
+    path('',include(router.urls)),
+    path('posts/<int:post_id>/comments/',CommentViewSet.as_view({'post': 'create'}), name='comment-create'),
+    path('posts/<int:user_id>/user',PostViewSet.as_view({'get': 'list'}), name="get-user-post"),
+    path('posts/<int:post_id>/delete',PostViewSet.as_view({'delete':'distroy'})),
+    path('posts/<int:post_id>/comments/<int:pk>/', CommentViewSet.as_view({'put' : 'update','get': 'retrieve', 'delete': 'destroy'}), name='comment-detail-delete'),
+    path('posts/like/<int:post_id>/',LikeView.as_view()),
+    path('posts/like/<int:post_id>/',LikeView.as_view()),
+    path('posts/like/<int:post_id>/',LikeView.as_view())
+    
 ]
 
 if settings.DEBUG:

@@ -5,7 +5,8 @@ from rest_framework import request
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('title','content','image')
+        fields = ('title','content','image','id','user')
+        read_only_fields = ['user']
         
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user  # Set the user
@@ -18,34 +19,29 @@ class PostSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
     
-class GetPostSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=Post
-        fields = ('created_at','updated_at','id', 'title', 'content', 'image','user') 
+    
+    
+
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ['id', 'content']
-    def create(self, validated_data):
-        post = self.context.get('post')
-        user = self.context['request'].user 
-        comment = Comment.objects.create(post=post, user=user, **validated_data)
-        return comment
+        fields = ['id', 'content','post']
+        read_only_fields = ['post']
+    
+    # def create(self, validated_data):
+    #     return super().create(validated_data)
         
 class LikeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Like
-        fields = ('created_at',)
-        
+    model = Like
+    fields = ['created_at'] 
     
-    def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user  
-        return super().create(validated_data)
+    # Include necessary fields
+  
+    
+    # def create(self, validated_data):
+    #     validated_data['user'] = self.context['request'].user  
+    #     return super().create(validated_data)
 
-class GetLikeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=Like
-        fields = ('id','created_at','post') 
 
     

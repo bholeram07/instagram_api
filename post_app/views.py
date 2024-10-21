@@ -1,150 +1,159 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
+
+
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework import generics
-from rest_framework.views import APIView
-from rest_framework import status
 from .models import Post, Comment, Like
 from user.models import User
 from .serializers import *
+likes_count=0
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 from .paginations import CustomPagination
+from rest_framework.viewsets import ModelViewSet
 from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import ValidationError
+from rest_framework import serializers
+from rest_framework.response import Response
+from .permissions import IsOwnerOrCommentAuthor
+from rest_framework import status
 
 
-class PostView(APIView):
-    permission_classes = [IsAuthenticated]
-    pagination_class = [CustomPagination]
-
-    def post(self, request):
-        serializer = PostSerializer(data=request.data, context={"request": request})
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(
-                {"message": "Post Created Successfully"}, status=status.HTTP_201_CREATED
-            )
-
-        else:
-            return Response(
-                {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-
-    def get(self, request, user_id=None):
-        paginator = CustomPagination()
-        if user_id is None:
-            posts = Post.objects.filter(user=request.user) 
-        else:
-            user = get_object_or_404(User, id=user_id)  
-            posts = Post.objects.filter(user=user)  
-        paginated_posts = paginator.paginate_queryset(posts, request)
-        serializer = GetPostSerializer(paginated_posts, many=True)
-        return paginator.get_paginated_response(serializer.data)
- 
-
-    def put(self, request, post_id):
-        post = get_object_or_404(Post,id=post_id)
-        serializer = PostSerializer(post, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "post Updated Successfully"},
-                status=status.HTTP_202_ACCEPTED,
-            )
-        return Response(
-            {"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def delete(self, request, post_id):
-        post = get_object_or_404(Post,id=post_id)
-        post.delete()
-        return Response(
-            {"message": "Post Deleted Successfully"}, status=status.HTTP_200_OK
-        )
-
-
-class CommentView(APIView):
+class PostViewSet(ModelViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
     
-
-    def post(self, request, post_id):
-            post = get_object_or_404(Post,id=post_id) 
-            data = request.data.copy()
-            data["post"] = post_id  
-            serializer = CommentSerializer(
-                data=request.data, context={"request": request, "post": post}
-            )
-            if serializer.is_valid():
-                serializer.save()  
-                return Response(
-                    {"data": serializer.data}, status=status.HTTP_201_CREATED
-                )
-            else:
-                return Response(
-                    {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-                )
-
-    def get(self, request, post_id):
-        paginator=CustomPagination()
-        post = get_object_or_404(Post, id=post_id)
-        comments = Comment.objects.filter(post=post)  
-        paginated_posts=paginator.paginate_queryset(comments,request)
-        serializer = CommentSerializer(paginated_posts, many=True)
-        return paginator.get_paginated_response(serializer.data)
-         
-
-    def delete(self, request, comment_id):
-        comment = get_object_or_404(Comment, id=comment_id)
-        comment.delete()
-        return Response(
-            {"message": "Comment Deleted Successfully"}, status=status.HTTP_200_OK
-        )
+    def list(self, request, user_id=None):
+        if user_id :
+            post = Post.objects.filter(user_id=user_id)
+            if not post.exists():
+                return Response({'message' : f"No any post of this user {user_id}"},status=200)
+        else:
+            post = Post.objects.all()
+        serializer= self.get_serializer(post,many=True)
+        return Response({'data':serializer.data})
+    
+    def distroy(self,request,post_id=None):
+        try:
+           post =Post.objects.filter(id=post_id,user=request.user)
+        except:
+            return ValidationError("no rights to delete this post")
+        if post.exists():
+            post.delete()
+            return Response({'post deleted'})
+        else:
+            return Response({'post not exist'})
+    
 
 
-    def put(self, request, comment_id):
-        comment = get_object_or_404(Comment, id=comment_id)
-        serializer = CommentSerializer(comment, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "Comment updated Successfully"}, status=status.HTTP_200_OK
-            )
-        return Response(
-            {
-                "error": serializer.errors,
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+class CommentViewSet(ModelViewSet):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrCommentAuthor]
+    
+    def get_queryset(self):
+        # Filter comments by post if post_id is provided in the URL
+        post_id = self.kwargs.get('post_id')
+        if post_id:
+            return Comment.objects.filter(post_id=post_id)
+        return Comment.objects.all()
+    
+    def perform_create(self, serializer):
+        post_id = self.kwargs.get('post_id')  # Retrieve the post_id from the URL
+        print(f"Post ID from URL: {post_id}")  # Debugging: print the post_id
+        try:
+            post = Post.objects.get(id=post_id)  # Ensure this post_id exists in the Post table
+            print(f"Post found: {post}")  # Debugging: confirm the Post object is found
+        except Post.DoesNotExist:
+            raise ValidationError("Post not found.")  # If not found, raise a ValidationError
+
+        serializer.save(post=post, user=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        # Use the inherited destroy method which applies the custom permission
+        return super().destroy(request, *args, **kwargs)
+    
+    def update(self, request, post_id, pk):
+        try:
+            comment = self.get_object()  # This will use the default get_object method
+        except Comment.DoesNotExist:
+            return Response({'detail': 'Comment not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the user is the owner of the comment
+        if comment.user != request.user:
+            return Response({'detail': 'You do not have permission to update this comment.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(comment, data=request.data, partial=True)  # Use partial=True if you want to allow partial updates
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        
+
+
+
+
+
+
+
 
 
 
 class LikeView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        paginator = CustomPagination()
-        likes = Like.objects.all()
-        paginated_post = paginator.paginate_queryset(likes,request)
-        serializer = GetLikeSerializer(paginated_post, many=True)
-        return paginator.get_paginated_response(serializer.data)
-
     def post(self, request, post_id):
-        post = get_object_or_404(Post, id=post_id)
         try:
-            serializer = LikeSerializer(data=request.data, context={'request': request})
-            if serializer.is_valid():
-                serializer.save(post=post, user=request.user)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except:
-            return Response( "already created", status=status.HTTP_200_OK)
+            post = Post.objects.get(id=post_id)
+        except Post.DoesNotExist:
+            raise NotFound("Post not found.")
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Check if the user already liked the post
+        if Like.objects.filter(post=post, user=request.user).exists():
+            raise ValidationError("You have already liked this post.")
+
+        # Create the like
+        Like.objects.create(post=post, user=request.user)
+
+        likes_count = Like.objects.filter(post=post).count()
+       
+        return Response({"message": f"Post liked successfully. Likes = {likes_count}"}, status=201)
     
-    def delete(self, request, post_id, like_id):
-        post = get_object_or_404(Post, id=post_id)
-        like = get_object_or_404(Like, id=like_id, post=post)
+    def delete(self,request,post_id):
+        try:
+            post=Post.objects.get(id=post_id)   
+        except:
+            raise NotFound("post not found")
+        if Like.objects.filter(post=post).exists():
+            Like.objects.filter(post=post).delete() 
+            likes_count = Like.objects.filter(post=post).count
+           
+            return Response({"message": "Post unliked",
+                             "post" : post_id }, status=201)
+        
+        else:
+            return Response({'message':'Not any like found on this post'},status=201)
+        
+    def get(self,request,post_id):
+        try:
+            post=Post.objects.get(id=post_id)
+        except:
+            Response({"message" :"Post not found"},status=404)
+        
+        Like.objects.filter(post=post).count()
+        return Response({
+                 'Post' : post_id,
+                'Likes' : Like.objects.filter(post=post).count()
+                
+            })
+        
+       
+        
+            
+      
 
-        like.delete()
-        return Response({"message": "Like deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+    
+
+    

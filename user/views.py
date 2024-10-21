@@ -124,12 +124,13 @@ class SendResetPasswordEmail(APIView):
             email_data = {
                 "subject": "Reset Your Password",
                 "body": body,
-                "to_email": user.email,
+                "to_email": email,
             }
-            Util.send_mail(email_data)
-
-            return Response({"message": "Password reset link sent successfully."}, status=status.HTTP_200_OK)
-        
+            try:
+                Util.send_mail(email_data)
+            except Exception as e:
+                return Response({"error": "Failed to send email."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"message": "Password reset link sent successfully."}, status=status.HTTP_200_OK) 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
