@@ -16,10 +16,12 @@ from .permissions import IsOwnerOrCommentAuthor
 from rest_framework import status
 
 
+
 class PostViewSet(ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
+
     
     def list(self, request, user_id=None):
         if user_id :
@@ -27,15 +29,16 @@ class PostViewSet(ModelViewSet):
             if not post.exists():
                 return Response({'message' : f"No any post of this user {user_id}"},status=200)
         else:
-            post = Post.objects.all()
-        serializer= self.get_serializer(post,many=True)
-        return Response({'data':serializer.data})
+           post = Post.objects.all()
+           paginator = CustomPagination(request, post, page_size=5)
+       
+        paginated_data = paginator.paginated_data
+
+        serializer= self.get_serializer(paginated_data,many=True)
+        return paginator.get_paginated_response({'data':serializer.data})
     
-    def distroy(self,request,post_id=None):
-        try:
-           post =Post.objects.filter(id=post_id,user=request.user)
-        except:
-            return ValidationError("no rights to delete this post")
+    def destroy(self,request,post_id=None):
+        post =Post.objects.get_object_or_404(id=post_id,user=request.user)
         if post.exists():
             post.delete()
             return Response({'post deleted'})
@@ -49,6 +52,7 @@ class CommentViewSet(ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrCommentAuthor]
     
+    
     def get_queryset(self):
         post_id = self.kwargs.get('post_id')
         if post_id:
@@ -57,27 +61,16 @@ class CommentViewSet(ModelViewSet):
     
     def perform_create(self, serializer):
         post_id = self.kwargs.get('post_id')  
-        print(f"Post ID from URL: {post_id}")  
-        try:
-            post = Post.objects.get(id=post_id) 
-            print(f"Post found: {post}")  
-        except Post.DoesNotExist:
-            raise ValidationError("Post not found.")  
-
+        post = Post.objects.get_object_or_404(id=post_id) 
         serializer.save(post=post, user=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
     
     def update(self, request, post_id, pk):
-        try:
-            comment = self.get_object()  
-        except Comment.DoesNotExist:
-            return Response({'detail': 'Comment not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-        # Check if the user is the owner of the comment
+        comment = get_object_or_404(Comment, id=pk, post_id=post_id)
         if comment.user != request.user:
-            return Response({'detail': 'You do not have permission to update this comment.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'You do not have permission to update'}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = self.get_serializer(comment, data=request.data, partial=True)  # Use partial=True if you want to allow partial updates
         serializer.is_valid(raise_exception=True)
@@ -86,14 +79,10 @@ class CommentViewSet(ModelViewSet):
 
 class LikeView(APIView):
     permission_classes = [IsAuthenticated]
+    
 
     def post(self, request, post_id):
-        try:
-            post = Post.objects.get(id=post_id)
-        except Post.DoesNotExist:
-            raise NotFound("Post not found.")
-
-       
+        post = Post.objects.get_object_or_404(id=post_id)
         if Like.objects.filter(post=post, user=request.user).exists():
             raise ValidationError("You have already liked this post.")
 
@@ -105,10 +94,9 @@ class LikeView(APIView):
         return Response({"message": f"Post liked successfully. Likes = {likes_count}"}, status=201)
     
     def delete(self,request,post_id):
-        try:
-            post=Post.objects.get(id=post_id)   
-        except:
-            raise NotFound("post not found")
+    
+        post=Post.objects.get_object_or_404(id=post_id)   
+        
         if Like.objects.filter(post=post).exists():
             Like.objects.filter(post=post).delete() 
             likes_count = Like.objects.filter(post=post).count
@@ -120,11 +108,7 @@ class LikeView(APIView):
             return Response({'message':'Not any like found on this post'},status=201)
         
     def get(self,request,post_id):
-        try:
-            post=Post.objects.get(id=post_id)
-        except:
-            Response({"message" :"Post not found"},status=404)
-        
+        post=Post.objects.get_object_or_404(id=post_id)
         Like.objects.filter(post=post).count()
         return Response({
                  'Post' : post_id,

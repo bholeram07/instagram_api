@@ -3,6 +3,7 @@ from user.models import User
 
 
 #Post Model
+
 class Post(models.Model):
     user = models.ForeignKey(User, on_delete = models.CASCADE)
     title = models.CharField(max_length = 25)

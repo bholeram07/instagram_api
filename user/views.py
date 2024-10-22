@@ -12,6 +12,7 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 from rest_framework.response import Response
+# from .send_mail import send_confirmation_email
 from rest_framework.permissions import IsAuthenticated
 from .serializers import (
     SignupSerializer,
@@ -22,11 +23,14 @@ from .serializers import (
     ResetPasswordSerializer,
 )
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken
+from .models import BlacklistedToken
 
 
 class Signup(APIView):
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
+        
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -72,9 +76,9 @@ class Login(APIView):
             else:
                 return Response(
                     {
-                        "errors": {
-                            "non_field_errors": ["Email or Password is not Valid"]
-                        }
+                        
+                        "error" :   "Email or Password is not Valid"
+                        
                     },
                     status=status.HTTP_404_NOT_FOUND,
                 )
@@ -86,28 +90,55 @@ class Login(APIView):
         )
 
 
+
+
 class UpdatePassword(APIView):
     permission_classes = [IsAuthenticated]
+
     def put(self, request):
         serializer = UpdateSerializer(data=request.data)
         user = request.user
-        
+
         if serializer.is_valid():
             if user.check_password(serializer.validated_data["current_password"]):
+                # Set the new password
                 user.set_password(serializer.validated_data["new_password"])
                 user.save()
-                OutstandingToken.objects.filter(user=user).delete()
+                # subject = 'Regarding Update Password',
+                # body = "Your Password has been updated ",
+                # send_confirmation_email(user,body,subject)
+
+                # Blacklist the access token
+                try:
+                    access_token = request.headers.get('Authorization').split(' ')[1]
+                    if access_token:
+                        BlacklistedToken.objects.create(token=access_token)#token authentication
+                    else:
+                        return Response(
+                            {"error": "Access token not provided."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                except Exception as e:
+                    return Response(
+                        {"error": "Please Login again with new password "},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Return success response
                 return Response(
-                    {"message": "password updated successfully"},
-                    status=status.HTTP_202_ACCEPTED,
+                    {"message": "Password updated successfully"},
+                    status=status.HTTP_202_ACCEPTED
                 )
             else:
+                # Invalid current password
                 return Response(
-                    {"error": "password is incorrect"},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"error": "Current password is incorrect."},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
+        # Invalid serializer data
         return Response(
-            {"error": serializer.errors}, status=status.HTTP_401_UNAUTHORIZED
+            {"error": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 
@@ -121,16 +152,8 @@ class SendResetPasswordEmail(APIView):
             token = PasswordResetTokenGenerator().make_token(user)
             reset_link = f"{request.scheme}://{request.get_host()}/user/password/reset/{user_id}/{token}"
             body = f"This is your link to reset password: {reset_link}"
-            print(reset_link)
-            email_data = {
-                "subject": "Reset Your Password",
-                "body": body,
-                "to_email": email,
-            }
-            try:
-                Util.send_mail(email_data)
-            except Exception as e:
-                return Response({"error": "Failed to send email."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            subject= "Reset Your Password",
+            # send_confirmation_email(user,body,subject)
             return Response({"message": "Password reset link sent successfully."}, status=status.HTTP_200_OK) 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -144,7 +167,6 @@ class ResetPassword(APIView):
             return Response(
                 {"message": "Password Reset Successfully"}, status=status.HTTP_200_OK
             )
-
         return Response(
             {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )

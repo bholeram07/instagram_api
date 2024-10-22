@@ -11,6 +11,6 @@ class Util:
             subject = data['subject'],
             body = data['body'],
             from_email = os.environ.get('EMAIL_FROM'),
-            # to=[os.environ.get('EMAIL_TO')]  
+            to=[data['to_email']]   
              )
         email.send()

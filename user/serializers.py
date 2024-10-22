@@ -3,9 +3,10 @@ from rest_framework import serializers
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from .utils import *
+from .send_mail import send_email
 import re
 from .validators import validate_password
+from .utils import *
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -51,17 +52,13 @@ class SignupSerializer(serializers.ModelSerializer):
         user = User.objects.create(**validate_data)
         user.set_password(validate_data["password"])
         user.save()
-        self.send_confirmation_email(user)
-        return user
-    
-    def send_confirmation_email(self, user):
         message = f'Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit'
-        email_data = {
-                "subject": "Welcome message",
-                "body": message,
-                "to_email": user.email,
-            }
-        Util.send_mail(email_data)
+        subject = "Welcome Message"
+        send_email.delay(user.id,message,subject)
+        return user
+        
+    
+  
 
 
 

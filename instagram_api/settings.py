@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'post_app',
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist'
+    'rest_framework_simplejwt.token_blacklist',
+    'celery'
 ]
 
 import os
@@ -124,6 +125,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':[
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    'EXCEPTION_HANDLER': 'post_app.exceptions.custom_exception_handler',
+    'DEFAULT_PAGINATION_CLASS' : 'post_app.paginations.CustomPagination'
 }
 
 # Password validation
@@ -155,6 +158,12 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_BACKEND_URL = "redis://127.0.0.1:6379/0"
+CELERY_TIMEZONE = 'UTC'
+
+WSGI_APPLICATION = "instagram_api.wsgi.application"
 
 
 # Static files (CSS, JavaScript, Images)
