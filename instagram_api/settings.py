@@ -125,7 +125,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':[
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
-    'EXCEPTION_HANDLER': 'post_app.exceptions.custom_exception_handler',
+    # 'EXCEPTION_HANDLER': 'post_app.exceptions.custom_exception_handler',
     'DEFAULT_PAGINATION_CLASS' : 'post_app.paginations.CustomPagination'
 }
 
