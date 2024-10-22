@@ -14,44 +14,39 @@ from rest_framework import serializers
 from rest_framework.response import Response
 from .permissions import IsOwnerOrCommentAuthor
 from rest_framework import status
-
+from .response import response
 
 
 class PostViewSet(ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
-
     
     def list(self, request, user_id=None):
         if user_id :
             post = Post.objects.filter(user_id=user_id)
-            if not post.exists():
-                return Response({'message' : f"No any post of this user {user_id}"},status=200)
+            #not use get object 404 return multiple queries
         else:
            post = Post.objects.all()
-           paginator = CustomPagination(request, post, page_size=5)
-       
+           
+        paginator = CustomPagination(request, post, page_size=5)
         paginated_data = paginator.paginated_data
-
         serializer= self.get_serializer(paginated_data,many=True)
         return paginator.get_paginated_response({'data':serializer.data})
     
     def destroy(self,request,post_id=None):
-        post =Post.objects.get_object_or_404(id=post_id,user=request.user)
-        if post.exists():
-            post.delete()
-            return Response({'post deleted'})
-        else:
-            return Response({'post not exist'})
-    
+        post = get_object_or_404(Post,id=post_id,user=request.user)
+        if post.user != request.user :
+            return response(403, error="permission Denied",message="Not authorized")
+        post.delete()
+        serializers = PostSerializer(instance= post)
+        return response(200, message="Post Deleted",data=serializers.data)
 
 
 class CommentViewSet(ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrCommentAuthor]
-    
     
     def get_queryset(self):
         post_id = self.kwargs.get('post_id')
@@ -61,7 +56,7 @@ class CommentViewSet(ModelViewSet):
     
     def perform_create(self, serializer):
         post_id = self.kwargs.get('post_id')  
-        post = Post.objects.get_object_or_404(id=post_id) 
+        post = get_object_or_404(Post,id=post_id) 
         serializer.save(post=post, user=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
@@ -80,38 +75,38 @@ class CommentViewSet(ModelViewSet):
 class LikeView(APIView):
     permission_classes = [IsAuthenticated]
     
-
     def post(self, request, post_id):
-        post = Post.objects.get_object_or_404(id=post_id)
+        post = get_object_or_404(Post,id=post_id)
         if Like.objects.filter(post=post, user=request.user).exists():
             raise ValidationError("You have already liked this post.")
-
-      
         Like.objects.create(post=post, user=request.user)
-
         likes_count = Like.objects.filter(post=post).count()
-       
-        return Response({"message": f"Post liked successfully. Likes = {likes_count}"}, status=201)
+        serializers= PostSerializer(instance=post)
+      
+        data = serializers.data,
+        message= f"Post liked successfully, Likes = {likes_count}"
+        return response(201,data,message,None)
     
     def delete(self,request,post_id):
-    
-        post=Post.objects.get_object_or_404(id=post_id)   
-        
+        post=get_object_or_404(Post,id=post_id)
+           
         if Like.objects.filter(post=post).exists():
             Like.objects.filter(post=post).delete() 
             likes_count = Like.objects.filter(post=post).count
-           
-            return Response({"message": "Post unliked",
-                             "post" : post_id }, status=201)
+            serializers = PostSerializer(instance = post)
+            message="Post unliked",
+            data = serializers.data
+            return response(200,data,message,None)
         
         else:
-            return Response({'message':'Not any like found on this post'},status=201)
+            return response(404,data=None,message="Not found any likes of you",error="Not found")
         
     def get(self,request,post_id):
-        post=Post.objects.get_object_or_404(id=post_id)
+        post=get_object_or_404(Post,id=post_id)
         Like.objects.filter(post=post).count()
+        serializers = PostSerializer(instance = post)
         return Response({
-                 'Post' : post_id,
+                 'Post' : serializers.data,
                 'Likes' : Like.objects.filter(post=post).count()
                 
             })
