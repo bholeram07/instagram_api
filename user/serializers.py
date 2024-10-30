@@ -83,8 +83,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('bio' , 'link' , 'other_social' , 'profile_image','username')
     
-    
-    
+
     def update(self, instance, validate_data):
         username = validate_data.get('username',instance.username)
         if username != instance.username :
@@ -104,9 +103,13 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.image = validate_data.get('profile_image',instance.image)
         instance.save()
         return instance
+    
+    
+    
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
+    username = serializers.CharField()
 
 
 class UpdateSerializer(serializers.Serializer):
