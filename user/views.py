@@ -12,6 +12,8 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 from rest_framework.response import Response
+from .authentications import get_token_for_user
+from django.utils import timezone
 # from .send_mail import send_confirmation_email
 from rest_framework.permissions import IsAuthenticated
 from .serializers import (
@@ -62,15 +64,15 @@ class Login(APIView):
             password = serializers.validated_data["password"]
             user = authenticate(email=email, password=password)
             if user:
-                refresh = RefreshToken.for_user(user)
+                token = get_token_for_user(user)
                 return Response(
                     {
-                        "refresh": str(refresh),
-                        "access": str(refresh.access_token),
-                        "access_token_expiration": refresh.access_token.payload[
+                        "refresh": str(token),
+                        "access": str(token.access_token),
+                        "access_token_expiration": token.access_token.payload[
                             "exp"
                         ],  
-                        "refresh_token_expiration": refresh.payload["exp"],
+                        "refresh_token_expiration": token.payload["exp"],
                     }
                 )
             else:
@@ -101,41 +103,21 @@ class UpdatePassword(APIView):
 
         if serializer.is_valid():
             if user.check_password(serializer.validated_data["current_password"]):
-                # Set the new password
                 user.set_password(serializer.validated_data["new_password"])
+                # user.save()
+                user.last_password_change = timezone.now()  # Set the last password change timestamp
                 user.save()
-                # subject = 'Regarding Update Password',
-                # body = "Your Password has been updated ",
-                # send_confirmation_email(user,body,subject)
 
-                # Blacklist the access token
-                try:
-                    access_token = request.headers.get('Authorization').split(' ')[1]
-                    if access_token:
-                        BlacklistedToken.objects.create(token=access_token)#token authentication
-                    else:
-                        return Response(
-                            {"error": "Access token not provided."},
-                            status=status.HTTP_400_BAD_REQUEST
-                        )
-                except Exception as e:
-                    return Response(
-                        {"error": "Please Login again with new password "},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-
-                # Return success response
                 return Response(
                     {"message": "Password updated successfully"},
                     status=status.HTTP_202_ACCEPTED
                 )
             else:
-                # Invalid current password
                 return Response(
                     {"error": "Current password is incorrect."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        # Invalid serializer data
+       
         return Response(
             {"error": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST

@@ -2,11 +2,13 @@ from .models import User
 from rest_framework import serializers
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from rest_framework.serializers import ValidationError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from .send_mail import send_email
+from .tasks import send_email
 import re
 from .validators import validate_password
 from .utils import *
+
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -46,7 +48,16 @@ class SignupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Username must not contain any spaces.")
         
         return data
-
+    
+    def validate_email(self,data):
+        if 'gkmit.co' in data:
+            raise ValidationError("This mail refers to an organization please enter a different mail ")
+        if '@gmail.com' not in data:
+            raise ValidationError("Please enter a valid mail")
+        
+        return data
+    
+    
     def create(self, validate_data):
         validate_data.pop('confirm_password')
         user = User.objects.create(**validate_data)
@@ -54,7 +65,7 @@ class SignupSerializer(serializers.ModelSerializer):
         user.save()
         message = f'Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit'
         subject = "Welcome Message"
-        send_email.delay(user.id,message,subject)
+        # send_email.delay(user.id,message,subject)
         return user
         
     

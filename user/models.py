@@ -2,6 +2,7 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.utils import timezone
 
 class BlacklistedToken(models.Model):
     token = models.CharField(max_length=500, unique=True)
@@ -42,6 +43,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     # country_code = models.BigIntegerField(default=+91)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    last_password_change = models.DateTimeField(null= True,blank = True)
 
     objects = CustomUserManager()
 
@@ -50,7 +52,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     class Meta:
         db_table = "User"
-
+        
+        
+    def save(self,*args,**kwargs):
+        if self.pk is not None:
+            old_user = User.objects.get(pk=self.pk)
+            if old_user.password != self.password :
+                last_password_change = timezone.now()
+        super.save(*args,**kwargs)
+        
+        
     def __str__(self):
         return self.email
 
