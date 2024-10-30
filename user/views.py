@@ -15,8 +15,6 @@ from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 from .serializers import *
 
-
-
 class Signup(APIView):
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
@@ -71,9 +69,15 @@ class Login(APIView):
     def post(self, request):
         serializers = LoginSerializer(data=request.data)
         if serializers.is_valid():
+          
             email = serializers.validated_data["email"]
+            username = serializers.validated_data["username"] 
             password = serializers.validated_data["password"]
-            user = authenticate(email=email, password=password)
+            if email:
+                user = authenticate(email=email, password=password)
+            elif username:
+                user = authenticate(email = username, password=password)
+            
             if user:
                 token = get_token_for_user(user)
                 return Response(
@@ -115,8 +119,7 @@ class UpdatePassword(APIView):
         if serializer.is_valid():
             if user.check_password(serializer.validated_data["current_password"]):
                 user.set_password(serializer.validated_data["new_password"])
-                # user.save()
-                user.last_password_change = timezone.now()  # Set the last password change timestamp
+                user.last_password_change = timezone.now()  
                 user.save()
 
                 return Response(
