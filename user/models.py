@@ -40,10 +40,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=150, unique=True)
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=30, blank=True)
+    bio = models.TextField(blank=True , null= True)
+    other_social = models.CharField(max_length=30, blank=True,null =True)
+    links = models.CharField(max_length=30,blank= True,null =True)
+    profile_image = models.ImageField(upload_to= '\post',null =True) 
     # country_code = models.BigIntegerField(default=+91)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     last_password_change = models.DateTimeField(null= True,blank = True)
+    username_change_count = models.PositiveIntegerField(default =0)
+    last_username_change = models.DateTimeField(null = True ,blank = True)
 
     objects = CustomUserManager()
 

@@ -5,6 +5,7 @@ from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework.serializers import ValidationError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from .tasks import send_email
+from django.utils import timezone
 import re
 from .validators import validate_password
 from .utils import *
@@ -57,7 +58,6 @@ class SignupSerializer(serializers.ModelSerializer):
         
         return data
     
-    
     def create(self, validate_data):
         validate_data.pop('confirm_password')
         user = User.objects.create(**validate_data)
@@ -67,9 +67,7 @@ class SignupSerializer(serializers.ModelSerializer):
         subject = "Welcome Message"
         # send_email.delay(user.id,message,subject)
         return user
-        
     
-  
 
 
 
@@ -78,6 +76,38 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("id", "username", "email", "first_name", "last_name")
+        
+
+    
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ('bio' , 'link' , 'other_social' , 'profile_image','username')
+    
+    
+    
+    def update(self, instance, validate_data):
+        username = validate_data.get('username',instance.username)
+        if username != instance.username :
+            now = timezone.now()
+            day_last_change = (now - instance.last_username_change).days if instance.last_username_change else None
+            if instance. username_change_count >3:
+                if day_last_change is not None and day_last_change < 15:
+                    raise ValidationError("Now You can only Change your username after 15 days")
+            
+            instance.username_change_count +=1
+            instance.last_username_change = now
+            instance.username = username
+            
+        instance.bio = validate_data.get('bio',instance.bio)
+        instance.link = validate_data.get('link',instance.link)
+        instance.other_social = validate_data.get('other_socal',instance.other_social)
+        instance.image = validate_data.get('profile_image',instance.image)
+        instance.save()
+        return instance
+    
+    
+    
+    
 
 
 class LoginSerializer(serializers.Serializer):

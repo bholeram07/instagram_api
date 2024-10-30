@@ -1,9 +1,9 @@
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.shortcuts import get_user_model
-from rest_framework.authentication import JWTAuthentication
-from django.shortcuts import timezone
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.utils import timezone
 
-User = get_user_model
+User = get_user_model()
 
 
 def get_token_for_user(user):

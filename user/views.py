@@ -1,14 +1,11 @@
-from django.shortcuts import render
-from django.shortcuts import render
+
 from .models import User
-from rest_framework.decorators import permission_classes
 from rest_framework.decorators import APIView
 from rest_framework import status
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from .utils import *
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 from rest_framework.response import Response
@@ -16,17 +13,8 @@ from .authentications import get_token_for_user
 from django.utils import timezone
 # from .send_mail import send_confirmation_email
 from rest_framework.permissions import IsAuthenticated
-from .serializers import (
-    SignupSerializer,
-    UserSerializer,
-    LoginSerializer,
-    UpdateSerializer,
-    SendResetPasswordEmailSerializer,
-    ResetPasswordSerializer,
-)
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.tokens import AccessToken
-from .models import BlacklistedToken
+from .serializers import *
+
 
 
 class Signup(APIView):
@@ -43,17 +31,40 @@ class Signup(APIView):
                 {"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-
 class UserProfile(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
+    def post(self,request):
         user = request.user
         if user:
-            serializers = UserSerializer(user)
-            return Response({"user": serializers.data}, status=status.HTTP_200_OK)
+            serializer = ProfileSerializer(data = request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "Profile" :serializer.data,
+                    "message" : "profile created"
+                } ,status= status.HTTP_201_CREATED)
         return Response(
             {"error": serializers.errors}, status=status.HTTP_400_BAD_REQUEST
         )
+    def get(self,request):
+        user = request.user
+        if user:
+            serializer = ProfileSerializer(data = request.data)
+            return Response({"user": serializers.data}, status=status.HTTP_200_OK)
+        return Response(
+            {"error": serializers.errors}, status=status.HTTP_400_BAD_REQUEST
+        )    
+    
+    def put(self,request):
+        user = request.user
+        if user:
+            serializer = ProfileSerializer(data = request.data)
+            if serializer.is_valid():
+                return Response({
+                    "Updated-Profile" : serializer.data,
+                    "message" : "Profile Updated",
+                },status=status.HTTP_202_ACCEPTED)
+            
+
 
 
 class Login(APIView):
@@ -154,3 +165,18 @@ class ResetPassword(APIView):
         )
 
 
+class Logout(APIView):
+    def post(self,request):
+        user = request.user
+        if user:
+             user.last_password_change = timezone.now() 
+             user.save()
+             return Response({
+                 'message' :"Successfully Loged out"
+
+             })
+             
+        else :
+            return Response({
+                "message" : "You have to login first for the logout"
+            })
