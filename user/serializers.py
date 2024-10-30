@@ -104,12 +104,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.image = validate_data.get('profile_image',instance.image)
         instance.save()
         return instance
-    
-    
-    
-    
-
-
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
