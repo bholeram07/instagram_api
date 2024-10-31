@@ -45,8 +45,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     links = models.CharField(max_length=30,blank= True,null =True)
     profile_image = models.ImageField(upload_to= '\post',null =True) 
     # country_code = models.BigIntegerField(default=+91)
+    is_verified = models.BooleanField(default= False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+
     last_password_change = models.DateTimeField(null= True,blank = True)
     username_change_count = models.PositiveIntegerField(default =0)
     last_username_change = models.DateTimeField(null = True ,blank = True)

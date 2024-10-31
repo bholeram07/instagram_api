@@ -9,13 +9,14 @@ from django.utils import timezone
 import re
 from .validators import validate_password
 from .utils import *
-
+from random import randint
 
 
 class SignupSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(
         style={"input_type : password"}, write_only=True
     )
+    
     class Meta:
         model = User
         fields = (
@@ -58,17 +59,43 @@ class SignupSerializer(serializers.ModelSerializer):
         
         return data
     
+    
+    
     def create(self, validate_data):
         validate_data.pop('confirm_password')
         user = User.objects.create(**validate_data)
         user.set_password(validate_data["password"])
         user.save()
+        send_otp = randint(0000,9999)
+        send_email(user.id ,send_otp, subject = "otp for account")
+        
         message = f'Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit'
         subject = "Welcome Message"
         # send_email.delay(user.id,message,subject)
         return user
     
 
+class VerifyOtpSerializer(serializers.ModelSerializer):
+    otp = serializers.CharField()
+    
+    class Meta:
+        Model = User
+        fields = ('otp','is_verified')
+        
+        
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.send_otp = randint(0000,9999)
+        user = self.context.get(user)
+        if user:
+            send_email(user.id , self.send_otp, subject="Otp for account")
+        
+    def validate_otp(self,data):
+        if data != self.send_otp:
+            raise ValidationError("Otp Not matched")
+        self.is_verified = True
+        return data
+    
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -103,6 +130,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.image = validate_data.get('profile_image',instance.image)
         instance.save()
         return instance
+    
+    
     
     
     
@@ -167,3 +196,5 @@ class ResetPasswordSerializer(serializers.Serializer):
         user.set_password(new_password)
         user.save()
         return attrs
+    
+    

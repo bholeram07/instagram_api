@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 from rest_framework.response import Response
 from .authentications import get_token_for_user
+from .permissions import IsUserVerified
 from django.utils import timezone
 # from .send_mail import send_confirmation_email
 from rest_framework.permissions import IsAuthenticated
@@ -18,18 +19,32 @@ from .serializers import *
 class Signup(APIView):
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
-        
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"message": "user created successfully"}, status=status.HTTP_201_CREATED
+                {"user": serializer.data,
+                 "message" : "User Signup Successfully"
+                 }, status=status.HTTP_201_CREATED
             )
         else:
             return Response(
                 {"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
+class VerifyOtp(APIView):
+    def post(self,request):
+        serializer = VerifyOtpSerializer(data = request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "Message" :"OTP verification Successfull",
+            },status=200)
+        return Response({
+            'error' : serializer.errors, 
+        },status=status.HTTP_202_ACCEPTED)
+
 class UserProfile(APIView):
+    permission_classes =[IsAuthenticated],[IsUserVerified]
     def post(self,request):
         user = request.user
         if user:
@@ -63,13 +78,10 @@ class UserProfile(APIView):
                 },status=status.HTTP_202_ACCEPTED)
             
 
-
-
 class Login(APIView):
     def post(self, request):
         serializers = LoginSerializer(data=request.data)
         if serializers.is_valid():
-          
             email = serializers.validated_data["email"]
             username = serializers.validated_data["username"] 
             password = serializers.validated_data["password"]
@@ -94,8 +106,7 @@ class Login(APIView):
                 return Response(
                     {
                         
-                        "error" :   "Email or Password is not Valid"
-                        
+                        "error" :   "Email or Password is not Valid"      
                     },
                     status=status.HTTP_404_NOT_FOUND,
                 )

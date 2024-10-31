@@ -12,3 +12,6 @@ def send_email(user_id,message,subject):
                 "to_email": user.email,
             }
     Util.send_mail(email_data)
+    
+    
+
