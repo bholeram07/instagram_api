@@ -15,6 +15,8 @@ from django.utils import timezone
 # from .send_mail import send_confirmation_email
 from rest_framework.permissions import IsAuthenticated
 from .serializers import *
+from .tasks import *
+
 
 class Signup(APIView):
     def post(self, request):
@@ -105,7 +107,6 @@ class Login(APIView):
             else:
                 return Response(
                     {
-                        
                         "error" :   "Email or Password is not Valid"      
                     },
                     status=status.HTTP_404_NOT_FOUND,

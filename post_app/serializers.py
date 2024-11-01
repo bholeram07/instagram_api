@@ -19,9 +19,6 @@ class PostSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
     
-    
-    
-
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,19 +26,14 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ['id', 'content','post']
         read_only_fields = ['post']
     
-    # def create(self, validated_data):
-    #     return super().create(validated_data)
+   
         
 class LikeSerializer(serializers.ModelSerializer):
     model = Like
     fields = ['created_at'] 
     
-    # Include necessary fields
-  
     
-    # def create(self, validated_data):
-    #     validated_data['user'] = self.context['request'].user  
-    #     return super().create(validated_data)
+
 
 
     

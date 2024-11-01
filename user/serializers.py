@@ -68,10 +68,9 @@ class SignupSerializer(serializers.ModelSerializer):
         user.save()
         send_otp = randint(0000,9999)
         send_email(user.id ,send_otp, subject = "otp for account")
-        
         message = f'Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit'
         subject = "Welcome Message"
-        # send_email.delay(user.id,message,subject)
+        send_email.delay(user.id,message,subject)
         return user
     
 
@@ -81,7 +80,7 @@ class VerifyOtpSerializer(serializers.ModelSerializer):
     class Meta:
         Model = User
         fields = ('otp','is_verified')
-        
+
         
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
@@ -96,8 +95,7 @@ class VerifyOtpSerializer(serializers.ModelSerializer):
         self.is_verified = True
         return data
     
-
-
+    
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -110,7 +108,6 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('bio' , 'link' , 'other_social' , 'profile_image','username')
     
-
     def update(self, instance, validate_data):
         username = validate_data.get('username',instance.username)
         if username != instance.username :
