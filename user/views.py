@@ -12,10 +12,13 @@ from rest_framework.response import Response
 from .authentications import get_token_for_user
 from .permissions import IsUserVerified
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 # from .send_mail import send_confirmation_email
 from rest_framework.permissions import IsAuthenticated
 from .serializers import *
 from .tasks import *
+from .models import OtpVerification
+from .generate_otp import generate_otp
 
 
 class Signup(APIView):
@@ -32,19 +35,32 @@ class Signup(APIView):
             return Response(
                 {"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
-
+            
+class SendOtp(APIView):
+    def post(self , request):
+        email = request.data.get("email")
+        user = get_object_or_404(User, email= email)
+    
+        otp = generate_otp()
+        print(otp)
+        
+        OtpVerification.objects.create(user=user, otp=otp)
+        
+        
+        return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
+    
+    
 class VerifyOtp(APIView):
-    def post(self,request):
-        serializer = VerifyOtpSerializer(data = request.data)
+    def post(self, request):
+        serializer = VerifyOtpSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({
-                "Message" :"OTP verification Successfull",
-            },status=200)
-        return Response({
-            'error' : serializer.errors, 
-        },status=status.HTTP_202_ACCEPTED)
+            # print(serializer.data)
+            # If OTP is verified, proceed with further actions (e.g., activate account)
+            return Response({"message": "OTP verified successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+            
+ 
 class UserProfile(APIView):
     permission_classes =[IsAuthenticated],[IsUserVerified]
     def post(self,request):
@@ -81,16 +97,15 @@ class UserProfile(APIView):
             
 
 class Login(APIView):
+    permission_classes = [IsUserVerified]
     def post(self, request):
         serializers = LoginSerializer(data=request.data)
         if serializers.is_valid():
             email = serializers.validated_data["email"]
-            username = serializers.validated_data["username"] 
             password = serializers.validated_data["password"]
-            if email:
-                user = authenticate(email=email, password=password)
-            elif username:
-                user = authenticate(email = username, password=password)
+          
+            user = authenticate(email=email, password=password)
+            
             
             if user:
                 token = get_token_for_user(user)
@@ -114,6 +129,7 @@ class Login(APIView):
         return Response(
             {
                 "errors": serializers.errors,
+                "Message" : "Please Verify user email"
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
@@ -122,7 +138,7 @@ class Login(APIView):
 
 
 class UpdatePassword(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsUserVerified]
 
     def put(self, request):
         serializer = UpdateSerializer(data=request.data)
@@ -151,6 +167,7 @@ class UpdatePassword(APIView):
 
 
 class SendResetPasswordEmail(APIView):
+    permission_classes = [IsUserVerified]
     def post(self, request):
         serializer = SendResetPasswordEmailSerializer(data=request.data)
         if serializer.is_valid():
@@ -159,6 +176,7 @@ class SendResetPasswordEmail(APIView):
             user_id = urlsafe_base64_encode(force_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
             reset_link = f"{request.scheme}://{request.get_host()}/user/password/reset/{user_id}/{token}"
+            print(reset_link)
             body = f"This is your link to reset password: {reset_link}"
             subject= "Reset Your Password",
             # send_confirmation_email(user,body,subject)
@@ -181,6 +199,7 @@ class ResetPassword(APIView):
 
 
 class Logout(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self,request):
         user = request.user
         if user:

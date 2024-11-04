@@ -10,13 +10,15 @@ import re
 from .validators import validate_password
 from .utils import *
 from random import randint
-
+from .models import OtpVerification
 
 class SignupSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(
         style={"input_type : password"}, write_only=True
     )
-    
+    password = serializers.CharField(
+      style={"input_type : password"},write_only = True
+    )
     class Meta:
         model = User
         fields = (
@@ -66,36 +68,53 @@ class SignupSerializer(serializers.ModelSerializer):
         user = User.objects.create(**validate_data)
         user.set_password(validate_data["password"])
         user.save()
-        send_otp = randint(0000,9999)
-        send_email(user.id ,send_otp, subject = "otp for account")
         message = f'Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit'
         subject = "Welcome Message"
-        send_email.delay(user.id,message,subject)
+        # send_email.delay(user.id,message,subject)
         return user
     
 
-class VerifyOtpSerializer(serializers.ModelSerializer):
-    otp = serializers.CharField()
-    
-    class Meta:
-        Model = User
-        fields = ('otp','is_verified')
+class VerifyOtpSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
 
+    def validate(self, data):
+        email = data.get('email')
+        otp = data.get('otp')
+
+        # Get the user by email and check OTP
+        otp_record = OtpVerification.objects.filter(otp=otp, user__email=email).last()
+        print(otp_record)
+        if not otp_record or otp_record.otp != otp:
+            raise ValidationError("Invalid or expired OTP.")
         
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
-        self.send_otp = randint(0000,9999)
-        user = self.context.get(user)
-        if user:
-            send_email(user.id , self.send_otp, subject="Otp for account")
         
-    def validate_otp(self,data):
-        if data != self.send_otp:
-            raise ValidationError("Otp Not matched")
-        self.is_verified = True
+        user = otp_record.user
+        print(user)
+        if user.is_verified:
+            return ValidationError("User Already verified")
+        user.is_verified = True
+        print(user.is_verified)
+       
+        user.save() 
+        # otp_record.delete()
+        
         return data
+
+    
+
+class SendOtpSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("User not found with this email.")
+        return value
     
     
+
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -135,7 +154,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
-    username = serializers.CharField()
+    # username = serializers.CharField()
 
 
 class UpdateSerializer(serializers.Serializer):

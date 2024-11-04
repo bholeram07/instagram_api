@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils import timezone
+from datetime import timedelta
 
 class BlacklistedToken(models.Model):
     token = models.CharField(max_length=500, unique=True)
@@ -67,11 +68,21 @@ class User(AbstractBaseUser, PermissionsMixin):
             old_user = User.objects.get(pk=self.pk)
             if old_user.password != self.password :
                 last_password_change = timezone.now()
-        super.save(*args,**kwargs)
+        super().save(*args,**kwargs)
         
         
     def __str__(self):
         return self.email
 
+
+class OtpVerification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        # OTP expires after 5 minutes
+        expiration_time = self.created_at + timedelta(minutes=5)
+        return timezone.now() > expiration_time
 
 
