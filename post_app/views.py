@@ -26,6 +26,11 @@ class PostViewSet(ModelViewSet):
         if user_id :
             post = Post.objects.filter(user_id=user_id)
             #not use get object 404 return multiple queries
+            if not post.exists():
+                return Response({
+                    "Message" : "post not exists for this user"
+                })
+                
         else:
            post = Post.objects.all()
            

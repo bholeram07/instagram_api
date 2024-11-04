@@ -54,8 +54,6 @@ class VerifyOtp(APIView):
     def post(self, request):
         serializer = VerifyOtpSerializer(data=request.data)
         if serializer.is_valid():
-            # print(serializer.data)
-            # If OTP is verified, proceed with further actions (e.g., activate account)
             return Response({"message": "OTP verified successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -189,7 +187,9 @@ class ResetPassword(APIView):
         serializer = ResetPasswordSerializer(
             data=request.data, context={"user_id": user_id, "token": token}
         )
+        
         if serializer.is_valid():
+            
             return Response(
                 {"message": "Password Reset Successfully"}, status=status.HTTP_200_OK
             )

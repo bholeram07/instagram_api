@@ -20,8 +20,9 @@ class CustomJwtAuthentication(JWTAuthentication):
         if user is not None:
             last_password_change = timezone.datetime.fromtimestamp(token_timestamp)
             if last_password_change is not None and user.last_password_change is not None:
+                pass
 
-                raise Exception("Your password has changed since this token was issued.")
+                # raise Exception("Your password has changed since this token was issued.")
         
         return user
        

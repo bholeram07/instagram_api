@@ -19,7 +19,7 @@ class CustomPagination:
     def get_paginated_data(self):
         start_index = (self.page_number - 1) * self.page_size
         end_index = start_index + self.page_size
-        return self.queryset[start_index:end_index]
+        return list(self.queryset.all()[start_index:end_index])
         
     def get_paginated_response(self, data):
         return Response({
