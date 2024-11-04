@@ -39,8 +39,8 @@ class PostViewSet(ModelViewSet):
         serializer= self.get_serializer(paginated_data,many=True)
         return paginator.get_paginated_response({'data':serializer.data})
     
-    def destroy(self,request,post_id=None):
-        post = get_object_or_404(Post,id=post_id,user=request.user)
+    def destroy(self,request,pk=None):
+        post = get_object_or_404(Post,id=pk,user=request.user)
         if post.user != request.user :
             return response(403, error="permission Denied",message="Not authorized")
         post.delete()
@@ -52,6 +52,7 @@ class CommentViewSet(ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrCommentAuthor]
+    
     
     def get_queryset(self):
         post_id = self.kwargs.get('post_id')
@@ -67,7 +68,27 @@ class CommentViewSet(ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
     
-    def update(self, request, post_id, pk):
+    
+    def list(self, request, post_id=None):
+        if post_id :
+            comment = Comment.objects.filter(post_id=post_id)
+            #not use get object 404 return multiple queries
+            if not comment.exists():
+                return Response({
+                    "Message" : "comment not exists for this user"
+                })
+                
+        else:
+           comment = Comment.objects.all()
+           
+        paginator = CustomPagination(request, comment, page_size=5)
+        paginated_data = paginator.paginated_data
+        serializer= self.get_serializer(paginated_data,many=True)
+        return paginator.get_paginated_response({'data':serializer.data})
+    
+    
+    def update(self, request, post_id,pk=None):
+        
         comment = get_object_or_404(Comment, id=pk, post_id=post_id)
         if comment.user != request.user:
             return Response({'detail': 'You do not have permission to update'}, status=status.HTTP_403_FORBIDDEN)
