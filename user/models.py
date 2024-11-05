@@ -45,7 +45,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     other_social = models.CharField(max_length=30, blank=True,null =True)
     links = models.CharField(max_length=30,blank= True,null =True)
     profile_image = models.ImageField(upload_to= '\post',null =True) 
-    # country_code = models.BigIntegerField(default=+91)
     is_verified = models.BooleanField(default= False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
