@@ -12,6 +12,7 @@ from .utils import *
 from random import randint
 from .models import OtpVerification
 
+
 class SignupSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(
         style={"input_type : password"}, write_only=True
@@ -70,7 +71,7 @@ class SignupSerializer(serializers.ModelSerializer):
         user.save()
         message = f'Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit'
         subject = "Welcome Message"
-        # send_email.delay(user.id,message,subject)
+        send_email(user.id,message,subject)
         return user
     
 
@@ -97,6 +98,7 @@ class VerifyOtpSerializer(serializers.Serializer):
         print(user.is_verified)
        
         user.save() 
+        
         # otp_record.delete()
         
         return data
@@ -146,11 +148,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.image = validate_data.get('profile_image',instance.image)
         instance.save()
         return instance
-    
-    
-    
-    
-    
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
@@ -213,4 +211,5 @@ class ResetPasswordSerializer(serializers.Serializer):
         user.save()
         return attrs
     
-    
+
+

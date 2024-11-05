@@ -85,4 +85,6 @@ class OtpVerification(models.Model):
         expiration_time = self.created_at + timedelta(minutes=5)
         return timezone.now() > expiration_time
 
+        
+    
 

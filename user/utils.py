@@ -1,16 +1,12 @@
-
-from django.core.mail import EmailMessage
-from django.conf import settings
+from django.core.mail import send_mail
 import os
 
 
-class Util:
-    @staticmethod
-    def send_mail(data):
-        email= EmailMessage(
-            subject = data['subject'],
-            body = data['body'],
-            from_email = os.environ.get('EMAIL_FROM'),
-            to=[data['to_email']]   
-             )
-        email.send()
+def send_test_mail(data):
+    print()
+    send_mail(
+        subject=data["subject"],
+        message=data["body"],
+        from_email=os.environ.get("EMAIL_FROM"),
+        recipient_list=[data["to_email"]],
+    )

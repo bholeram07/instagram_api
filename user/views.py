@@ -13,7 +13,6 @@ from .authentications import get_token_for_user
 from .permissions import IsUserVerified
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
-# from .send_mail import send_confirmation_email
 from rest_framework.permissions import IsAuthenticated
 from .serializers import *
 from .tasks import *
@@ -42,6 +41,8 @@ class SendOtp(APIView):
         user = get_object_or_404(User, email= email)
     
         otp = generate_otp()
+        message = f"Your Otp for the verification mail {otp}"
+        send_email(user.id,message,"Otp for Verification")
         print(otp)
         
         OtpVerification.objects.create(user=user, otp=otp)
@@ -101,10 +102,7 @@ class Login(APIView):
         if serializers.is_valid():
             email = serializers.validated_data["email"]
             password = serializers.validated_data["password"]
-          
             user = authenticate(email=email, password=password)
-            
-            
             if user:
                 token = get_token_for_user(user)
                 return Response(
@@ -141,7 +139,6 @@ class UpdatePassword(APIView):
     def put(self, request):
         serializer = UpdateSerializer(data=request.data)
         user = request.user
-
         if serializer.is_valid():
             if user.check_password(serializer.validated_data["current_password"]):
                 user.set_password(serializer.validated_data["new_password"])

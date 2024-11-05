@@ -1,5 +1,5 @@
 from celery import shared_task
-from .utils import *
+from .utils import send_test_mail
 from django.contrib.auth import get_user_model
 
 @shared_task
@@ -10,8 +10,9 @@ def send_email(user_id,message,subject=""):
                 "subject": subject,
                 "body": message,
                 "to_email": user.email,
+                
             }
-    Util.send_mail(email_data)
+    send_test_mail(email_data)
     
     
 
