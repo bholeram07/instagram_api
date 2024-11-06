@@ -3,7 +3,6 @@ import os
 
 
 def send_test_mail(data):
-    print()
     send_mail(
         subject=data["subject"],
         message=data["body"],

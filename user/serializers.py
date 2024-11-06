@@ -127,7 +127,8 @@ class UserSerializer(serializers.ModelSerializer):
     
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('bio' , 'link' , 'other_social' , 'profile_image','username')
+        model = User
+        fields = ('id','bio' , 'other_social' , 'profile_image','username')
     
     def update(self, instance, validate_data):
         username = validate_data.get('username',instance.username)
@@ -143,10 +144,11 @@ class ProfileSerializer(serializers.ModelSerializer):
             instance.username = username
             
         instance.bio = validate_data.get('bio',instance.bio)
-        instance.link = validate_data.get('link',instance.link)
-        instance.other_social = validate_data.get('other_socal',instance.other_social)
-        instance.image = validate_data.get('profile_image',instance.image)
+        # instance.link = validate_data.get('link',instance.link)
+        instance.other_social = validate_data.get('other_social',instance.other_social)
+        instance.profile_image = validate_data.get('profile_image',instance.profile_image)
         instance.save()
+       
         return instance
 
 class LoginSerializer(serializers.Serializer):

@@ -62,34 +62,22 @@ class VerifyOtp(APIView):
             
  
 class UserProfile(APIView):
-    permission_classes =[IsAuthenticated],[IsUserVerified]
-    def post(self,request):
-        user = request.user
-        if user:
-            serializer = ProfileSerializer(data = request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response({
-                    "Profile" :serializer.data,
-                    "message" : "profile created"
-                } ,status= status.HTTP_201_CREATED)
-        return Response(
-            {"error": serializers.errors}, status=status.HTTP_400_BAD_REQUEST
-        )
+    permission_classes =[IsAuthenticated]
     def get(self,request):
         user = request.user
         if user:
-            serializer = ProfileSerializer(data = request.data)
-            return Response({"user": serializers.data}, status=status.HTTP_200_OK)
+            serializer = ProfileSerializer(user)            
+            return Response({"user": serializer.data}, status=status.HTTP_200_OK)
         return Response(
-            {"error": serializers.errors}, status=status.HTTP_400_BAD_REQUEST
+            {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )    
     
     def put(self,request):
         user = request.user
         if user:
-            serializer = ProfileSerializer(data = request.data)
+            serializer = ProfileSerializer(instance=user ,data=request.data,partial=True)
             if serializer.is_valid():
+                serializer.save()
                 return Response({
                     "Updated-Profile" : serializer.data,
                     "message" : "Profile Updated",
@@ -221,7 +209,7 @@ class FreindRequestView(ModelViewSet):
     
     def create(self,request ,*args ,**kwargs):
         data = {'sender' : request.user.id, 'reciever' : request.data.get('reciever')}
-        self.serializer_class = self.get_serializer(data=data)
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception = True)
         serializer.save()
         return Response(serializer.data,status=status.HTTP_201_CREATED)
