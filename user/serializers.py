@@ -219,11 +219,11 @@ class FreindRequestSerializer(serializers.ModelSerializer):
         
 
 class FreindshipSerializer(serializers.ModelSerializer):
-    freinds = serializer.SerializerMethodField()
+    freinds = serializers.SerializerMethodField()
     
     class Meta:
         model = Freindship
-        fields - ('friend','created_at')
+        fields = ('friends','created_at')
     
     
     def get_freind(self,obj):

@@ -80,9 +80,9 @@ class OtpVerification(models.Model):
         return timezone.now() > expiration_time
 
         
-class FreindRequest(moddels.Model):
-    sender = models.ForeignKey(User,on_delete=models.CASCADE)
-    reciever = models.ForeignKey(User,on_delete=models.CASCADE)
+class FreindRequest(models.Model):
+    sender = models.ForeignKey(User,on_delete=models.CASCADE,related_name='sent_freind_request')
+    reciever = models.ForeignKey(User,on_delete=models.CASCADE,related_name='recieved_freind_request')
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10,choices=(('pending','PENDING'),('accepted','Accepted'),('rejected','Rejected')),default='pending')
     
@@ -98,11 +98,9 @@ class FreindRequest(moddels.Model):
     
 
 class Freindship(models.Model):
-    user1 = models.ForeignKey(User,on_delete=models.CASCADE)
+    user1 = models.ForeignKey(User,on_delete=models.CASCADE,related_name='Freind_initiated')
     user2 = models.ForeignKey(User,on_delete=models.CASCADE)
-    ceated_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     
     
-    class Meta:
-        unique_together = {user1,user2}
         

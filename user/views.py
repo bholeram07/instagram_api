@@ -214,7 +214,7 @@ class Logout(APIView):
             })
 
 
-class FreindRequest(ModelViewSet):
+class FreindRequestView(ModelViewSet):
     queryset = FreindRequest.objects.all()
     serializer_class = FreindRequestSerializer
     permission_classes = [IsAuthenticated]
