@@ -219,6 +219,13 @@ class FreindRequestSerializer(serializers.ModelSerializer):
         model = FreindRequest
         fields = ('sender','reciever','created_at','status')
         
+    def validate(self,data):
+        request = self.context.get('request')
+        if data['reciever'] == request.user :
+            raise ValidationError("You can not send request to yourself")
+
+        return data        
+        
 
 class FreindshipSerializer(serializers.ModelSerializer):
     freinds = serializers.SerializerMethodField()

@@ -63,7 +63,13 @@ class CommentViewSet(ModelViewSet):
     def perform_create(self, serializer):
         post_id = self.kwargs.get('post_id')  
         post = get_object_or_404(Post,id=post_id) 
-        serializer.save(post=post, user=self.request.user)
+        parent_id = self.request.data.get('parent') 
+        parent_comment = None
+        if parent_id:
+            parent_comment = get_object_or_404(Comment, id=parent_id, post_id=post_id)
+        
+        serializer.save(post=post, user=self.request.user, parent=parent_comment)
+
 
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
@@ -93,7 +99,7 @@ class CommentViewSet(ModelViewSet):
         if comment.user != request.user:
             return Response({'detail': 'You do not have permission to update'}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = self.get_serializer(comment, data=request.data, partial=True)  # Use partial=True if you want to allow partial updates
+        serializer = self.get_serializer(comment, data=request.data, partial=True)  
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)

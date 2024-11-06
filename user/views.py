@@ -85,7 +85,7 @@ class UserProfile(APIView):
             
 
 class Login(APIView):
-    permission_classes = [IsUserVerified]
+    # permission_classes = [IsUserVerified]
     def post(self, request):
         serializers = LoginSerializer(data=request.data)
         if serializers.is_valid():

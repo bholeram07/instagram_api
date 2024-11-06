@@ -9,7 +9,7 @@ class PostSerializer(serializers.ModelSerializer):
         read_only_fields = ['user']
         
     def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user  # Set the user
+        validated_data['user'] = self.context['request'].user  
         return super().create(validated_data)
     
     def update(self, instance, validate_data):
@@ -21,19 +21,23 @@ class PostSerializer(serializers.ModelSerializer):
     
 
 class CommentSerializer(serializers.ModelSerializer):
+    replies = serializers.SerializerMethodField()
     class Meta:
         model = Comment
-        fields = ['id', 'content','post']
+        fields = ['id', 'content','post','replies']
         read_only_fields = ['post']
     
-   
+    def get_replies(self,obj):
+        if obj.replies.exists():
+            return CommentSerializer(obj.replies.all(),many=True).data
+        return []
+    
+    def create(self , validated_data):
+        request = self.context.get('request')
+        validated_data['user']=request.user
+        return super().create(validated_data)   
         
 class LikeSerializer(serializers.ModelSerializer):
     model = Like
     fields = ['created_at'] 
-    
-    
-
-
-
     

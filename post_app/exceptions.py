@@ -16,5 +16,4 @@ def custom_exception_handler(exc , context):
         'error': {
             'status_code': status.HTTP_500_INTERNAL_SERVER_ERROR,
             'message': 'Internal server error',
-        }
-    })
+        }}) 

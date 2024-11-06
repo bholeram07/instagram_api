@@ -26,14 +26,16 @@ from post_app.views import PostViewSet,CommentViewSet,LikeView
 router = DefaultRouter()
 router.register('posts', PostViewSet) 
 router.register('comments', CommentViewSet)  
+router.register(r'posts/(?P<post_id>\d+)/comments', CommentViewSet, basename='comments')
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/', include('user.urls')),
     path('',include(router.urls)),
-    path('posts/<int:post_id>/comments/',CommentViewSet.as_view({'post': 'create'}), name='comment-create'),
+    path('posts/<int:post_id>/comments/',CommentViewSet.as_view({'post': 'create','get':'list'}), name='comment-create'),
     path('posts/<int:user_id>/user',PostViewSet.as_view({'get': 'list'}), name="get-user-post"),
-    path('post/<int:post_id>/comments/',CommentViewSet.as_view({'get': 'list'}),name = "get-comment"),
+    # path('post/<int:post_id>/comments/',CommentViewSet.as_view({'get': 'list'}),name = "get-comment"),
     path('posts/<int:pk>/',PostViewSet.as_view({'delete':'destroy'})),
     path('posts/<int:post_id>/comments/<int:pk>/', CommentViewSet.as_view({'put' : 'update','get': 'retrieve', 'delete': 'destroy'}), name='comment-detail-delete'),
     path('posts/like/<int:post_id>/',LikeView.as_view()),
