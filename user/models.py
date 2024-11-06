@@ -5,12 +5,7 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils import timezone
 from datetime import timedelta
 
-class BlacklistedToken(models.Model):
-    token = models.CharField(max_length=500, unique=True)
-    blacklisted_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.token
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
@@ -85,5 +80,28 @@ class OtpVerification(models.Model):
         return timezone.now() > expiration_time
 
         
+class Freind(moddels.Model):
+    sender = models.ForeignKey(User,on_delete=models.CASCADE)
+    reciever = models.ForeignKey(User,on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10,choices=(('pending','PENDING'),('accepted','Accepted'),('rejected','Rejected')),default='pending')
+    
+    
+    def accept(self):
+        Freindship.objects.create(user1=self.sender ,user2=self.reciever)
+        self.status = 'accepted'
+        self.save()
+        
+    def reject(self):
+        self.status = 'rejected'
+        self.save()
     
 
+class Freindship(models.Model):
+    user1 = models.ForeignKey(User,on_delete=models.CASCADE)
+    user2 = models.ForeignKey(User,on_delete=models.CASCADE)
+    ceated_at = models.DateTimeField(auto_now_add=True)
+    
+    
+    class Meta:
+        unique_together = {user1,user2}
