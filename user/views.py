@@ -1,5 +1,5 @@
 
-from .models import User
+from .models import *
 from rest_framework.decorators import APIView
 from rest_framework import status
 from django.utils.http import urlsafe_base64_encode
@@ -18,7 +18,8 @@ from .serializers import *
 from .tasks import *
 from .models import OtpVerification
 from .generate_otp import generate_otp
-
+from rest_framework.viewsets import ModelViewSet,ReadOnlyModelViewSet
+from post_app.serializers import PostSerializer
 
 class Signup(APIView):
     def post(self, request):
@@ -211,3 +212,49 @@ class Logout(APIView):
             return Response({
                 "message" : "You have to login first for the logout"
             })
+
+
+class FreindRequest(ModelViewSet):
+    queryset = FreindRequest.objects.all()
+    serializer_class = FreindRequestSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def create(self,request ,*args ,**kwargs):
+        data = {'sender' : request.user.id, 'reciever' : request.data.get('reciever')}
+        self.serializer_class = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception = True)
+        serializer.save()
+        return Response(serializer.data,status=status.HTTP_201_CREATED)
+    
+    
+    def update(self,request,pk=None):
+        freind_request = get_object_or_404(FreindRequest,id = pk ,reciever = request.user)
+        action = request.data.get('action')
+        
+        if action == 'accept':
+            freind_request.accept()
+        
+        elif action == 'reject':
+            freind_request.reject()
+            
+        
+        else:
+            return Response({'Message' : 'Invalid Action'},status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        return Response(FreindRequestSerializer(freind_request).data,status=status.HTTP_202_ACCEPTED)
+    
+    
+
+class FeedView(ReadOnlyModelViewSet):
+    serializer_class = FreindshipSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def list(self ,*argsg,**kwargs):
+        user = request.user
+        friends = Friendship.objects.filter(models.Q(user1=user) | models.Q(user2=user))
+        
+        # Retrieve posts only from friends
+        friend_posts = Post.objects.filter(user__in=[friend.user2 for friend in friends if friend.user1 == user] + [friend.user1 for friend in friends if friend.user2 == user])
+        serializer = PostSerializer(friend_posts, many =True,context ={'request':request})
+        return Response(serializer.data)

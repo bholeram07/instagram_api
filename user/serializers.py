@@ -10,7 +10,7 @@ import re
 from .validators import validate_password
 from .utils import *
 from random import randint
-from .models import OtpVerification
+from .models import OtpVerification,Freindship,FreindRequest
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -210,6 +210,28 @@ class ResetPasswordSerializer(serializers.Serializer):
         user.set_password(new_password)
         user.save()
         return attrs
+
+
+class FreindRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FreindRequest
+        fields = ('sender','reciever','created_at','status')
+        
+
+class FreindshipSerializer(serializers.ModelSerializer):
+    freinds = serializer.SerializerMethodField()
+    
+    class Meta:
+        model = Freindship
+        fields - ('friend','created_at')
+    
+    
+    def get_freind(self,obj):
+        request_user = self.context.get('request').user
+        return obj.user2 if obj.user1 == request_user else obj.user1
+    
+    
+
     
 
 
