@@ -1,44 +1,45 @@
-from .models import Post,Comment,Like
+from .models import Post, Comment, Like
 from rest_framework import serializers
 from rest_framework import request
+
 
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('title','content','image','id','user')
-        read_only_fields = ['user']
-        
+        fields = ("title", "content", "image", "id", "user")
+        read_only_fields = ["user"]
+
     def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user  
+        validated_data["user"] = self.context["request"].user
         return super().create(validated_data)
-    
+
     def update(self, instance, validate_data):
-        instance.title = validate_data.get('title',instance.title)
-        instance.content = validate_data.get('content',instance.content)
-        instance.image = validate_data.get('image',instance.image)
+        instance.title = validate_data.get("title", instance.title)
+        instance.content = validate_data.get("content", instance.content)
+        instance.image = validate_data.get("image", instance.image)
         instance.save()
         return instance
-    
+
 
 class CommentSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
+
     class Meta:
         model = Comment
-        fields = ['id', 'content','post','replies','user']
-        read_only_fields = ['post']
-    
-    def get_replies(self,obj):
+        fields = ["id", "content", "post", "replies", "user"]
+        read_only_fields = ["post"]
+
+    def get_replies(self, obj):
         if obj.replies.exists():
-            return CommentSerializer(obj.replies.all(),many=True).data
+            return CommentSerializer(obj.replies.all(), many=True).data
         return []
-    
-    def create(self , validated_data):
-        request = self.context.get('request')
-        validated_data['user']=request.user
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        validated_data["user"] = request.user
         return super().create(validated_data)
-       
-        
+
+
 class LikeSerializer(serializers.ModelSerializer):
     model = Like
-    fields = ['created_at','user','post'] 
-    
+    fields = ["created_at", "user", "post"]

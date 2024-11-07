@@ -8,24 +8,24 @@ User = get_user_model()
 
 def get_token_for_user(user):
     token = RefreshToken.for_user(user)
-    token['last_password_change'] = user.last_password_change.timestamp() if user.last_password_change else 0
+    token["last_password_change"] = (
+        user.last_password_change.timestamp() if user.last_password_change else 0
+    )
     return token
 
 
-
 class CustomJwtAuthentication(JWTAuthentication):
-    def get_user(self,validated_token):
+    def get_user(self, validated_token):
         user = super().get_user(validated_token)
-        token_timestamp = validated_token.get('last_password_change',0)
+        token_timestamp = validated_token.get("last_password_change", 0)
         if user is not None:
             last_password_change = timezone.datetime.fromtimestamp(token_timestamp)
-            if last_password_change is not None and user.last_password_change is not None:
+            if (
+                last_password_change is not None
+                and user.last_password_change is not None
+            ):
                 pass
 
                 # raise Exception("Your password has changed since this token was issued.")
-        
+
         return user
-       
-    
-
-

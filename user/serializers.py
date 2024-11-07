@@ -10,7 +10,7 @@ import re
 from .validators import validate_password
 from .utils import *
 from random import randint
-from .models import OtpVerification,Friendship,FriendRequest
+from .models import OtpVerification, Friendship, FriendRequest
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -29,17 +29,17 @@ class SignupSerializer(serializers.ModelSerializer):
         serializers.ValidationError: raised if the username is not provided.
         ValidationError: Raised if the password is not in correct format.
         ValidationError: Raised username is not in correct format
-        
+
     Returns:
         _dict_ : The username ,firstname,lastname,email and password
     """
+
     confirm_password = serializers.CharField(
         style={"input_type : password"}, write_only=True
     )
-   
-    password = serializers.CharField(
-      style={"input_type : password"},write_only = True
-    )
+
+    password = serializers.CharField(style={"input_type : password"}, write_only=True)
+
     class Meta:
         model = User
         fields = (
@@ -50,51 +50,51 @@ class SignupSerializer(serializers.ModelSerializer):
             "password",
             "confirm_password",
         )
+
     def validate(self, data):
         username = data.get("username")
         password = data.get("password")
         confirm_password = data.get("confirm_password")
-        
+
         if password != confirm_password:
-            raise serializers.ValidationError("password must be equal to the confirm password")
+            raise serializers.ValidationError(
+                "password must be equal to the confirm password"
+            )
         validate_password(password, username)
 
         return data
 
-    
-
     def validate_username(self, data):
-        
-       
+
         if re.search(r"[!@#$%^&*(),.?\":{}|<>]", data):
             raise serializers.ValidationError(
                 "Username should not contain any special characters."
             )
         if re.search(r"\s", data):
             raise serializers.ValidationError("Username must not contain any spaces.")
-        
+
         return data
-    
-    def validate_email(self,data):
-        if 'gkmit.co' in data:
-            raise ValidationError("This mail refers to an organization please enter a different mail ")
-        if '@gmail.com' not in data:
+
+    def validate_email(self, data):
+        if "gkmit.co" in data:
+            raise ValidationError(
+                "This mail refers to an organization please enter a different mail "
+            )
+        if "@gmail.com" not in data:
             raise ValidationError("Please enter a valid mail")
-        
+
         return data
-    
-    
-    
+
     def create(self, validate_data):
-        validate_data.pop('confirm_password')
+        validate_data.pop("confirm_password")
         user = User.objects.create(**validate_data)
         user.set_password(validate_data["password"])
         user.save()
-        message = f'Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit'
+        message = f"Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit"
         subject = "Welcome Message"
-        send_email(user.id,message,subject)
+        send_email(user.id, message, subject)
         return user
-    
+
 
 class VerifyOtpSerializer(serializers.Serializer):
     """
@@ -108,44 +108,43 @@ class VerifyOtpSerializer(serializers.Serializer):
         ValidationError: Raised if the otp provided is expired or invalid
 
     Returns:
-        bool : verified user 
+        bool : verified user
     """
+
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
 
     def validate(self, data):
-        email = data.get('email')
-        otp = data.get('otp')
+        email = data.get("email")
+        otp = data.get("otp")
 
         # Get the user by email and check OTP
         otp_record = OtpVerification.objects.filter(otp=otp, user__email=email).last()
         print(otp_record)
         if not otp_record or otp_record.otp != otp:
             raise ValidationError("Invalid or expired OTP.")
-        
-        
+
         user = otp_record.user
         print(user)
         if user.is_verified:
             return ValidationError("User Already verified")
         user.is_verified = True
         print(user.is_verified)
-       
-        user.save() 
-        
+
+        user.save()
+
         # otp_record.delete()
-        
+
         return data
 
-    
 
 class SendOtpSerializer(serializers.Serializer):
     """
     _summary_
-    
-    Serializer for handling the email of the registered user,allowing to send the 
-    random 6 digits otp to the provided registered mail of the user 
-    
+
+    Serializer for handling the email of the registered user,allowing to send the
+    random 6 digits otp to the provided registered mail of the user
+
 
     Args:
         email (str): email of the registered user
@@ -156,17 +155,18 @@ class SendOtpSerializer(serializers.Serializer):
     Returns:
         str: return the validate email of the user
     """
+
     email = serializers.EmailField()
 
     def validate_email(self, value):
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
         if not User.objects.filter(email=value).exists():
             raise serializers.ValidationError("User not found with this email.")
         return value
-    
-    
-    
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     """
     _summary_
@@ -193,30 +193,40 @@ class ProfileSerializer(serializers.ModelSerializer):
         dict: The validated and serialized user profile data, including id, bio,
             other_social, profile_image, and username fields.
     """
+
     class Meta:
         model = User
-        fields = ('id','bio' , 'other_social' , 'profile_image','username')
-    
+        fields = ("id", "bio", "other_social", "profile_image", "username")
+
     def update(self, instance, validate_data):
-        username = validate_data.get('username',instance.username)
-        if username != instance.username :
+        username = validate_data.get("username", instance.username)
+        if username != instance.username:
             now = timezone.now()
-            day_last_change = (now - instance.last_username_change).days if instance.last_username_change else None
-            if instance. username_change_count >3:
+            day_last_change = (
+                (now - instance.last_username_change).days
+                if instance.last_username_change
+                else None
+            )
+            if instance.username_change_count > 3:
                 if day_last_change is not None and day_last_change < 15:
-                    raise ValidationError("Now You can only Change your username after 15 days")
-            
-            instance.username_change_count +=1
+                    raise ValidationError(
+                        "Now You can only Change your username after 15 days"
+                    )
+
+            instance.username_change_count += 1
             instance.last_username_change = now
             instance.username = username
-            
-        instance.bio = validate_data.get('bio',instance.bio)
+
+        instance.bio = validate_data.get("bio", instance.bio)
         # instance.link = validate_data.get('link',instance.link)
-        instance.other_social = validate_data.get('other_social',instance.other_social)
-        instance.profile_image = validate_data.get('profile_image',instance.profile_image)
+        instance.other_social = validate_data.get("other_social", instance.other_social)
+        instance.profile_image = validate_data.get(
+            "profile_image", instance.profile_image
+        )
         instance.save()
-       
+
         return instance
+
 
 class LoginSerializer(serializers.Serializer):
     """
@@ -225,17 +235,17 @@ class LoginSerializer(serializers.Serializer):
     This serializer handles user authentication by validating the provided
     email and password. The email must be a valid email format, and the
     password is a plain text string.
-    
+
     Args:
         email(str) : email of the user
-        password(str) : password of the user 
-        
+        password(str) : password of the user
+
     Raises:
         serializers.ValidationError: if email format is encorrect
 
-   
+
     """
-    
+
     email = serializers.EmailField()
     password = serializers.CharField()
     # username = serializers.CharField()
@@ -244,48 +254,49 @@ class LoginSerializer(serializers.Serializer):
 class UpdateSerializer(serializers.Serializer):
     """
     _summary_
-    
+
     This serializer handles the password updation by validating the
     authenticated user.he email must be a valid email format and
     The password must be a strong and valid text string
-    
+
     Args:
         email(str) : The email address of the user
         new_password(str) : The new password of the user
         confirm_password (str) : The confirm password of the user
-        
+
     Returns:
-        retuens the validate data email and password of the user 
+        retuens the validate data email and password of the user
     """
+
     email = serializers.EmailField()
     current_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
-    
+
     def validate(self, data):
         new_password = data.get("new_password")
         validate_password(new_password, None)
         return data
-        
 
 
 class SendResetPasswordEmailSerializer(serializers.Serializer):
     """
     _summary_
-    
+
     Serializer for sending the reset password link to the user's email. validate
     the email of the user
-    
-    
+
+
     Args:
-        email (str): email of the user 
+        email (str): email of the user
 
     Raises:
         serializers.ValidationError: Raised if the email is not registered
         serializers.ValidationError: Raised if the email is not in correct format
-        
+
     Returns:
         str : return the validate email of type str
     """
+
     email = serializers.EmailField()
 
     class Meta:
@@ -301,9 +312,9 @@ class SendResetPasswordEmailSerializer(serializers.Serializer):
 class ResetPasswordSerializer(serializers.Serializer):
     """
     _summary_
-    
+
     Serializer for reset the password of the registered user
-    
+
 
     Args:
         new_password (str): new_password of the user
@@ -316,6 +327,7 @@ class ResetPasswordSerializer(serializers.Serializer):
     Returns:
         _type_: _description_
     """
+
     new_password = serializers.CharField(
         max_length=20, style={"input_type : password"}, write_only=True
     )
@@ -341,7 +353,7 @@ class ResetPasswordSerializer(serializers.Serializer):
         user = User.objects.get(id=id)
         if not PasswordResetTokenGenerator().check_token(user, token):
             raise serializers.ValidationError("Token is not matched or expired")
-        validate_password(new_password,None)
+        validate_password(new_password, None)
         user.set_password(new_password)
         user.save()
         return attrs
@@ -350,28 +362,21 @@ class ResetPasswordSerializer(serializers.Serializer):
 class FriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FriendRequest
-        fields = ['sender', 'reciever', 'status']
-        read_only_fields = ['sender', 'status']
+        fields = ["sender", "reciever", "status"]
+        read_only_fields = ["sender", "status"]
 
     def create(self, validated_data):
-        validated_data['sender'] = self.context['request'].user
-        return super().create(validated_data)  
-        
+        validated_data["sender"] = self.context["request"].user
+        return super().create(validated_data)
+
 
 class FriendshipSerializer(serializers.ModelSerializer):
     friends = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Friendship
-        fields = ('friends','created_at')
-    
-    
-    def get_friend(self,obj):
-        request_user = self.context.get('request').user
+        fields = ("friends", "created_at")
+
+    def get_friend(self, obj):
+        request_user = self.context.get("request").user
         return obj.user2 if obj.user1 == request_user else obj.user1
-    
-    
-
-    
-
-
