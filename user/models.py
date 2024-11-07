@@ -30,6 +30,14 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(email, username, password, **extra_fields)
 
+class Base(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    
+    class Meta:
+        abstract = True
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
@@ -61,7 +69,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         if self.pk is not None:
             old_user = User.objects.get(pk=self.pk)
             if old_user.password != self.password :
-                last_password_change = timezone.now()
+                self.last_password_change = timezone.now()
         super().save(*args,**kwargs)
         
         
@@ -69,21 +77,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 
-class OtpVerification(models.Model):
+class OtpVerification(Base):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     otp = models.CharField(max_length=6)
-    created_at = models.DateTimeField(auto_now_add=True)
-
+   
     def is_expired(self):
-        # OTP expires after 5 minutes
         expiration_time = self.created_at + timedelta(minutes=5)
         return timezone.now() > expiration_time
 
         
-class FriendRequest(models.Model):
+class FriendRequest(Base):
     sender = models.ForeignKey(User,on_delete=models.CASCADE,related_name='sent_freind_request')
     reciever = models.ForeignKey(User,on_delete=models.CASCADE,related_name='recieved_freind_request')
-    created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10,choices=(('pending','PENDING'),('accepted','Accepted'),('rejected','Rejected')),default='pending')
     
     
@@ -97,10 +102,8 @@ class FriendRequest(models.Model):
         self.save()
     
 
-class Friendship(models.Model):
+class Friendship(Base):
     user1 = models.ForeignKey(User,on_delete=models.CASCADE,related_name='Freind_initiated')
     user2 = models.ForeignKey(User,on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
     
         

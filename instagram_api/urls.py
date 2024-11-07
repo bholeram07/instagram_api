@@ -36,8 +36,8 @@ urlpatterns = [
     path('posts/<int:post_id>/comments/',CommentViewSet.as_view({'post': 'create','get':'list'}), name='comment-create'),
     path('posts/<int:user_id>/user',PostViewSet.as_view({'get': 'list'}), name="get-user-post"),
     # path('post/<int:post_id>/comments/',CommentViewSet.as_view({'get': 'list'}),name = "get-comment"),
-    path('posts/<int:pk>/',PostViewSet.as_view({'delete':'destroy'})),
-    path('posts/<int:post_id>/comments/<int:pk>/', CommentViewSet.as_view({'put' : 'update','get': 'retrieve', 'delete': 'destroy'}), name='comment-detail-delete'),
+    # path('posts/<int:pk>/',PostViewSet.as_view({'delete':'destroy'})),
+    # path('posts/<int:post_id>/comments/<int:pk>/', CommentViewSet.as_view({'put' : 'update','get': 'retrieve', 'delete': 'destroy'}), name='comment-detail-delete'),
     path('posts/like/<int:post_id>/',LikeView.as_view()),
     path('posts/like/<int:post_id>/',LikeView.as_view()),
     path('posts/like/<int:post_id>/',LikeView.as_view())

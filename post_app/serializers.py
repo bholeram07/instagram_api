@@ -24,7 +24,7 @@ class CommentSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
     class Meta:
         model = Comment
-        fields = ['id', 'content','post','replies']
+        fields = ['id', 'content','post','replies','user']
         read_only_fields = ['post']
     
     def get_replies(self,obj):
@@ -35,9 +35,10 @@ class CommentSerializer(serializers.ModelSerializer):
     def create(self , validated_data):
         request = self.context.get('request')
         validated_data['user']=request.user
-        return super().create(validated_data)   
+        return super().create(validated_data)
+       
         
 class LikeSerializer(serializers.ModelSerializer):
     model = Like
-    fields = ['created_at'] 
+    fields = ['created_at','user','post'] 
     

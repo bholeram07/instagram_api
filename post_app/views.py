@@ -18,22 +18,17 @@ from .response import response
 
 
 class PostViewSet(ModelViewSet):
-    queryset = Post.objects.all()
+    queryset = Post.objects.filter(is_deleted = False)
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
     
     def list(self, request, user_id=None):
         if user_id :
             post = Post.objects.filter(user_id=user_id)
-            #not use get object 404 return multiple queries
             if not post.exists():
                 return Response({
                     "Message" : "post not exists for this user"
-                })
-                
-        else:
-           post = Post.objects.all()
-           
+                })       
         paginator = CustomPagination(request, post, page_size=5)
         paginated_data = paginator.paginated_data
         serializer= self.get_serializer(paginated_data,many=True)
@@ -43,13 +38,13 @@ class PostViewSet(ModelViewSet):
         post = get_object_or_404(Post,id=pk,user=request.user)
         if post.user != request.user :
             return response(403, error="permission Denied",message="Not authorized")
-        post.delete()
+        post.is_deleted = True
         serializers = PostSerializer(instance= post)
         return response(200, message="Post Deleted",data=serializers.data)
 
 
 class CommentViewSet(ModelViewSet):
-    queryset = Comment.objects.all()
+    queryset = Comment.objects.filter(is_deleted=False)
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrCommentAuthor]
     
@@ -69,37 +64,37 @@ class CommentViewSet(ModelViewSet):
             parent_comment = get_object_or_404(Comment, id=parent_id, post_id=post_id)
         
         serializer.save(post=post, user=self.request.user, parent=parent_comment)
-
-
+   
     def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
-    
+        instance = self.get_object()
+        instance.is_deleted = True
+        instance.deleted_at = timezone.now() 
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
     def list(self, request, post_id=None):
-        if post_id :
-            comment = Comment.objects.filter(post_id=post_id)
-            #not use get object 404 return multiple queries
-            if not comment.exists():
-                return Response({
-                    "Message" : "comment not exists for this user"
-                })
-                
-        else:
-           comment = Comment.objects.all()
-           
+        if not post_id :
+             return Response({
+                "message" : "Please Provide Post id"
+            })
+            
+        comment = Comment.objects.filter(post_id=post_id,is_deleted=False)
+        if not comment.exists():
+            return Response({
+                "Message" : "comment not exists for this user"
+            })
         paginator = CustomPagination(request, comment, page_size=5)
         paginated_data = paginator.paginated_data
         serializer= self.get_serializer(paginated_data,many=True)
         return paginator.get_paginated_response({'data':serializer.data})
+        
+           
     
     
     def update(self, request, post_id,pk=None):
         
         comment = get_object_or_404(Comment, id=pk, post_id=post_id)
-        if comment.user != request.user:
-            return Response({'detail': 'You do not have permission to update'}, status=status.HTTP_403_FORBIDDEN)
-
-        serializer = self.get_serializer(comment, data=request.data, partial=True)  
+        serializer = self.get_serializer(comment, data=request.data, partial=True,is_deleted=False)  
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -141,14 +136,5 @@ class LikeView(APIView):
                  'Post' : serializers.data,
                 'Likes' : Like.objects.filter(post=post).count()
                 
-            })
-        
-       
-        
-            
-      
-
-
-    
-
-    
+                
+            })  

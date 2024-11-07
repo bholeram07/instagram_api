@@ -1,4 +1,4 @@
-# validators.py
+
 import re
 from rest_framework import serializers
 

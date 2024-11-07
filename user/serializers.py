@@ -14,9 +14,29 @@ from .models import OtpVerification,Friendship,FriendRequest
 
 
 class SignupSerializer(serializers.ModelSerializer):
+    """
+    _summary_
+
+    Args:
+       serializers (ModelSerializer): Django Rest Framework's model serializer
+            for defining fields and validating data.
+
+    Raises:
+         serializers.ValidationError: Raised if a field contains invalid data
+            or does not meet the required criteria.
+        serializers.ValidationError: Raised if the provided username is already
+            taken by another user.
+        serializers.ValidationError: raised if the username is not provided.
+        ValidationError: Raised if the password is not in correct format.
+        ValidationError: Raised username is not in correct format
+        
+    Returns:
+        _dict_ : The username ,firstname,lastname,email and password
+    """
     confirm_password = serializers.CharField(
         style={"input_type : password"}, write_only=True
     )
+   
     password = serializers.CharField(
       style={"input_type : password"},write_only = True
     )
@@ -44,6 +64,7 @@ class SignupSerializer(serializers.ModelSerializer):
     
 
     def validate_username(self, data):
+        
        
         if re.search(r"[!@#$%^&*(),.?\":{}|<>]", data):
             raise serializers.ValidationError(
@@ -76,6 +97,19 @@ class SignupSerializer(serializers.ModelSerializer):
     
 
 class VerifyOtpSerializer(serializers.Serializer):
+    """
+    _summary_
+
+    Args:
+        otp(str): The otp send at the mail of the user
+        email(str) : The email of the user
+    Raises:
+        ValidationError: Raised if the otp provided by user is not matched with the sent otp
+        ValidationError: Raised if the otp provided is expired or invalid
+
+    Returns:
+        bool : verified user 
+    """
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=6)
 
@@ -106,6 +140,22 @@ class VerifyOtpSerializer(serializers.Serializer):
     
 
 class SendOtpSerializer(serializers.Serializer):
+    """
+    _summary_
+    
+    Serializer for handling the email of the registered user,allowing to send the 
+    random 6 digits otp to the provided registered mail of the user 
+    
+
+    Args:
+        email (str): email of the registered user
+
+    Raises:
+        serializers.ValidationError: _description_
+
+    Returns:
+        str: return the validate email of the user
+    """
     email = serializers.EmailField()
 
     def validate_email(self, value):
@@ -116,16 +166,33 @@ class SendOtpSerializer(serializers.Serializer):
         return value
     
     
-
-class UserSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = ("id", "username", "email", "first_name", "last_name")
-        
-
     
 class ProfileSerializer(serializers.ModelSerializer):
+    """
+    _summary_
+
+    Serializer for handling user profile data, allowing users to update
+    their profile with bio, social links, profile image, and username.
+    Performs validation on input fields and raises errors as necessary.
+
+    Args:
+        serializers (ModelSerializer): Django Rest Framework's model serializer
+            for defining fields and validating data.
+
+    Raises:
+        serializers.ValidationError: Raised if a field contains invalid data
+            or does not meet the required criteria.
+        serializers.ValidationError: Raised if the provided username is already
+            taken by another user.
+        serializers.ValidationError: Raised if the profile image format is
+            unsupported or exceeds the allowed file size.
+        ValidationError: Raised if the social media links contain invalid URLs.
+        ValidationError: Raised if the bio field exceeds the maximum allowed length.
+
+    Returns:
+        dict: The validated and serialized user profile data, including id, bio,
+            other_social, profile_image, and username fields.
+    """
     class Meta:
         model = User
         fields = ('id','bio' , 'other_social' , 'profile_image','username')
@@ -152,12 +219,44 @@ class ProfileSerializer(serializers.ModelSerializer):
         return instance
 
 class LoginSerializer(serializers.Serializer):
+    """
+    _summary_
+
+    This serializer handles user authentication by validating the provided
+    email and password. The email must be a valid email format, and the
+    password is a plain text string.
+    
+    Args:
+        email(str) : email of the user
+        password(str) : password of the user 
+        
+    Raises:
+        serializers.ValidationError: if email format is encorrect
+
+   
+    """
+    
     email = serializers.EmailField()
     password = serializers.CharField()
     # username = serializers.CharField()
 
 
 class UpdateSerializer(serializers.Serializer):
+    """
+    _summary_
+    
+    This serializer handles the password updation by validating the
+    authenticated user.he email must be a valid email format and
+    The password must be a strong and valid text string
+    
+    Args:
+        email(str) : The email address of the user
+        new_password(str) : The new password of the user
+        confirm_password (str) : The confirm password of the user
+        
+    Returns:
+        retuens the validate data email and password of the user 
+    """
     email = serializers.EmailField()
     current_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
@@ -170,6 +269,23 @@ class UpdateSerializer(serializers.Serializer):
 
 
 class SendResetPasswordEmailSerializer(serializers.Serializer):
+    """
+    _summary_
+    
+    Serializer for sending the reset password link to the user's email. validate
+    the email of the user
+    
+    
+    Args:
+        email (str): email of the user 
+
+    Raises:
+        serializers.ValidationError: Raised if the email is not registered
+        serializers.ValidationError: Raised if the email is not in correct format
+        
+    Returns:
+        str : return the validate email of type str
+    """
     email = serializers.EmailField()
 
     class Meta:
@@ -183,6 +299,23 @@ class SendResetPasswordEmailSerializer(serializers.Serializer):
 
 
 class ResetPasswordSerializer(serializers.Serializer):
+    """
+    _summary_
+    
+    Serializer for reset the password of the registered user
+    
+
+    Args:
+        new_password (str): new_password of the user
+        confirm_password(str) : confirm password of the user
+
+    Raises:
+        serializers.ValidationError: _
+        serializers.ValidationError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     new_password = serializers.CharField(
         max_length=20, style={"input_type : password"}, write_only=True
     )
