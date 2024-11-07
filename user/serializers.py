@@ -10,7 +10,7 @@ import re
 from .validators import validate_password
 from .utils import *
 from random import randint
-from .models import OtpVerification,Freindship,FreindRequest
+from .models import OtpVerification,Friendship,FriendRequest
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -214,28 +214,26 @@ class ResetPasswordSerializer(serializers.Serializer):
         return attrs
 
 
-class FreindRequestSerializer(serializers.ModelSerializer):
+class FriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
-        model = FreindRequest
-        fields = ('sender','reciever','created_at','status')
-        
-    def validate(self,data):
-        request = self.context.get('request')
-        if data['reciever'] == request.user :
-            raise ValidationError("You can not send request to yourself")
+        model = FriendRequest
+        fields = ['sender', 'reciever', 'status']
+        read_only_fields = ['sender', 'status']
 
-        return data        
+    def create(self, validated_data):
+        validated_data['sender'] = self.context['request'].user
+        return super().create(validated_data)  
         
 
-class FreindshipSerializer(serializers.ModelSerializer):
-    freinds = serializers.SerializerMethodField()
+class FriendshipSerializer(serializers.ModelSerializer):
+    friends = serializers.SerializerMethodField()
     
     class Meta:
-        model = Freindship
+        model = Friendship
         fields = ('friends','created_at')
     
     
-    def get_freind(self,obj):
+    def get_friend(self,obj):
         request_user = self.context.get('request').user
         return obj.user2 if obj.user1 == request_user else obj.user1
     

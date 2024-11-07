@@ -80,7 +80,7 @@ class OtpVerification(models.Model):
         return timezone.now() > expiration_time
 
         
-class FreindRequest(models.Model):
+class FriendRequest(models.Model):
     sender = models.ForeignKey(User,on_delete=models.CASCADE,related_name='sent_freind_request')
     reciever = models.ForeignKey(User,on_delete=models.CASCADE,related_name='recieved_freind_request')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -97,7 +97,7 @@ class FreindRequest(models.Model):
         self.save()
     
 
-class Freindship(models.Model):
+class Friendship(models.Model):
     user1 = models.ForeignKey(User,on_delete=models.CASCADE,related_name='Freind_initiated')
     user2 = models.ForeignKey(User,on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

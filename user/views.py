@@ -14,12 +14,14 @@ from .permissions import IsUserVerified
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets
 from .serializers import *
 from .tasks import *
 from .models import OtpVerification
 from .generate_otp import generate_otp
 from rest_framework.viewsets import ModelViewSet,ReadOnlyModelViewSet
 from post_app.serializers import PostSerializer
+from post_app.models import Post
 
 class Signup(APIView):
     def post(self, request):
@@ -202,43 +204,75 @@ class Logout(APIView):
             })
 
 
-class FreindRequestView(ModelViewSet):
-    queryset = FreindRequest.objects.all()
-    serializer_class = FreindRequestSerializer
+class FriendRequestView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
     
-    def create(self,request ,*args ,**kwargs):
-        data = {'sender' : request.user.id, 'reciever' : request.data.get('reciever')}
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception = True)
-        serializer.save()
-        return Response(serializer.data,status=status.HTTP_201_CREATED)
-    
-    
-    def update(self,request,pk=None):
-        freind_request = get_object_or_404(FreindRequest,id = pk ,reciever = request.user)
-        action = request.data.get('action')
+    def list(self, request):
+        user = request.user
+        friend_requests = FriendRequest.objects.filter(receiver=user)
+        serializer = FriendRequestSerializer(friend_requests, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        sender = request.user
+        receiver_id = request.data.get('receiver_id')
+
+        # Check if receiver_id is provided
+        if not receiver_id:
+            return Response({"error": "Receiver ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        reciever = get_object_or_404(User,id=receiver_id)
+
+        # Check if users are already friends
+        if Friendship.objects.filter(user1=sender, user2=reciever).exists() or Friendship.objects.filter(user1=reciever, user2=sender).exists():
+            return Response({"message": "You are already friends."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if a request is already pending
+        if FriendRequest.objects.filter(sender=sender, reciever=reciever, status='pending').exists():
+            return Response({"message": "Request already sent"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create the friend request
+        FreindRequest.objects.create(sender=sender, reciever=receiver)
+        return Response({"message": "Friend request sent successfully"}, status=status.HTTP_201_CREATED)
+
+    def update(self, request, pk=None):
         
-        if action == 'accept':
-            freind_request.accept()
+        friend_request = get_object_or_404(FriendRequest,pk=pk)
         
-        elif action == 'reject':
-            freind_request.reject()
-            
+
+        if friend_request.receiver != request.user:
+            return Response({"error": "Not authorized to respond to this friend request"}, status=status.HTTP_403_FORBIDDEN)
         
-        else:
-            return Response({'Message' : 'Invalid Action'},status=status.HTTP_400_BAD_REQUEST)
+        action = request.data.get("action")
+
+        if action not in ['accept', 'reject']:
+            return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if action == "accept":
+            friend_request.status = "accepted"
+            friend_request.save()
+
+            # Create the friendship record
+            Friendship.objects.create(user1=friend_request.sender, user2=friend_request.receiver)
+            return Response({"message": "Friend request accepted"}, status=status.HTTP_200_OK)
         
-        
-        return Response(FreindRequestSerializer(freind_request).data,status=status.HTTP_202_ACCEPTED)
+        elif action == "reject":
+            friend_request.status = "rejected"
+            friend_request.save()
+            return Response({"message": "Friend request rejected"}, status=status.HTTP_200_OK)
+
+        request.user.friends.add(friend_request.sender)
+        friend_request.sender.friends.add(request.user)
+
+        return Response({'detail': 'Friend request accepted.'}, status=status.HTTP_200_OK)
     
     
 
 class FeedView(ReadOnlyModelViewSet):
-    serializer_class = FreindshipSerializer
+    serializer_class = FriendshipSerializer
     permission_classes = [IsAuthenticated]
     
-    def list(self ,*argsg,**kwargs):
+    def list(self ,request,*args,**kwargs):
         user = request.user
         friends = Friendship.objects.filter(models.Q(user1=user) | models.Q(user2=user))
         

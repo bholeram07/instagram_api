@@ -12,7 +12,7 @@ urlpatterns = [
     path("reset-password/send-email/", SendResetPasswordEmail.as_view(),name="reset-password-send-email",),
     path("password/reset/<user_id>/<token>/",ResetPassword().as_view(), name="reset-password",
     ),
-    path('friends/requests/', FreindRequestView.as_view({'post': 'create'}), name='send-request'),
-    path('friends/requests/<int:pk>/', FreindRequestView.as_view({'put': 'update'}), name='manage-request'),
+    path('friends/requests/', FriendRequestView.as_view({'post': 'create'}), name='send-request'),
+    path('friends/requests/<int:pk>/', FriendRequestView.as_view({'put': 'update'}), name='manage-request'),
     path('feed/', FeedView.as_view({'get': 'list'}), name='user-feed'),
 ]
