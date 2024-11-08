@@ -35,10 +35,8 @@ urlpatterns = [
     path('',include(router.urls)),
     path('comment/<str:post_id>/',CommentViewSet.as_view({'post': 'create','get':'list'}), name='comment-create'),
     path('posts/<str:user_id>/user',PostViewSet.as_view({'get': 'list'}), name="get-user-post"),
-    # path('posts/<int:post_id>/comments/<int:pk>/', CommentViewSet.as_view({'put' : 'update','get': 'retrieve', 'delete': 'destroy'}), name='comment-detail-delete'),
-    path('like/<str:post_id>/',LikeView.as_view()),
-    path('like/<str:post_id>/',LikeView.as_view()),
     path('like/<str:post_id>/',LikeView.as_view())
+   
     
 ]
 
