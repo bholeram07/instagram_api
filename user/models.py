@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.utils import timezone
 from datetime import timedelta
-
+import uuid
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):
@@ -39,6 +39,7 @@ class Base(models.Model):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, unique=True)
     first_name = models.CharField(max_length=30, blank=True)
@@ -61,34 +62,39 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ["username", "first_name", "last_name"]
 
     class Meta:
-        db_table = "User"
+        db_table = "user"
 
     def save(self, *args, **kwargs):
-        if self.pk is not None:
-            old_user = User.objects.get(pk=self.pk)
-            if old_user.password != self.password:
-                self.last_password_change = timezone.now()
+        if self.pk:
+            try:
+                old_user = User.objects.get(pk=self.pk)
+                if old_user.password != self.password:
+                    self.last_password_change = timezone.now()
+            except User.DoesNotExist:
+                    pass
         super().save(*args, **kwargs)
-
     def __str__(self):
         return self.email
 
 
 class OtpVerification(Base):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,to_field='id', db_column='user_id')
     otp = models.CharField(max_length=6)
 
     def is_expired(self):
         expiration_time = self.created_at + timedelta(minutes=5)
         return timezone.now() > expiration_time
+    class Meta:
+        db_table = 'user_otp'
 
 
 class FriendRequest(Base):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
     sender = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="sent_freind_request"
+        User, on_delete=models.CASCADE, related_name="sent_freind_request",to_field='id', db_column='sender_id'
     )
     reciever = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="recieved_freind_request"
+        User, on_delete=models.CASCADE, related_name="recieved_freind_request",to_field='id', db_column='reciever_id'
     )
     status = models.CharField(
         max_length=10,
@@ -108,10 +114,16 @@ class FriendRequest(Base):
     def reject(self):
         self.status = "rejected"
         self.save()
-
+    
+    class Meta:
+        db_table = 'friend_request'
 
 class Friendship(Base):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
     user1 = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="Freind_initiated"
+        User, on_delete=models.CASCADE, related_name="Freind_initiated",to_field='id', db_column='user1_id'
     )
-    user2 = models.ForeignKey(User, on_delete=models.CASCADE)
+    user2 = models.ForeignKey(User, on_delete=models.CASCADE,to_field='id', db_column='user2_id')
+   
+    class Meta :
+       db_table = 'friendship'

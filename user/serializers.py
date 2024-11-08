@@ -43,6 +43,7 @@ class SignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+    
             "username",
             "first_name",
             "last_name",
@@ -80,9 +81,6 @@ class SignupSerializer(serializers.ModelSerializer):
             raise ValidationError(
                 "This mail refers to an organization please enter a different mail "
             )
-        if "@gmail.com" not in data:
-            raise ValidationError("Please enter a valid mail")
-
         return data
 
     def create(self, validate_data):
@@ -218,7 +216,6 @@ class ProfileSerializer(serializers.ModelSerializer):
             instance.username = username
 
         instance.bio = validate_data.get("bio", instance.bio)
-        # instance.link = validate_data.get('link',instance.link)
         instance.other_social = validate_data.get("other_social", instance.other_social)
         instance.profile_image = validate_data.get(
             "profile_image", instance.profile_image
@@ -248,7 +245,6 @@ class LoginSerializer(serializers.Serializer):
 
     email = serializers.EmailField()
     password = serializers.CharField()
-    # username = serializers.CharField()
 
 
 class UpdateSerializer(serializers.Serializer):

@@ -1,6 +1,7 @@
 from .models import Post, Comment, Like
 from rest_framework import serializers
 from rest_framework import request
+from user.serializers import SignupSerializer
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -23,11 +24,13 @@ class PostSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
+    user = SignupSerializer(read_only=True)
+    post = PostSerializer(read_only=True)
 
     class Meta:
         model = Comment
-        fields = ["id", "content", "post", "replies", "user"]
-        read_only_fields = ["post"]
+        fields = ['id', 'content', 'post', 'replies', 'user']
+        read_only_fields = ["user","post"]
 
     def get_replies(self, obj):
         if obj.replies.exists():
@@ -41,5 +44,11 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class LikeSerializer(serializers.ModelSerializer):
-    model = Like
-    fields = ["created_at", "user", "post"]
+    user = SignupSerializer(read_only=True)
+    post = PostSerializer(read_only=True)
+    
+    class Meta:
+        model = Like
+        fields = ["created_at", "user", "post"]
+        read_only_fields = ["user","post"]
+

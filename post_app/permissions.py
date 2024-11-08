@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS
 
 
 class IsOwnerOrCommentAuthor(BasePermission):
@@ -7,3 +8,5 @@ class IsOwnerOrCommentAuthor(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return obj.post.user == request.user or obj.user == request.user
+
+

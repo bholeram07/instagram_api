@@ -2,10 +2,12 @@ from django.db import models
 from user.models import User
 from user.models import Base
 from django.utils import timezone
+import uuid
 
 
 class Post(Base):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    id = models.UUIDField(primary_key=True,default= uuid.uuid4,editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,to_field='id', db_column='user_id')
     title = models.CharField(max_length=25)
     content = models.TextField()
     image = models.ImageField(upload_to="posts/", null=True, blank=True)
@@ -20,8 +22,9 @@ class Post(Base):
 
 
 class Comment(Base):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE , to_field='id',db_column='user_id')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE ,to_field='id', db_column='post_id')
     content = models.TextField()
     parent = models.ForeignKey(
         "self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies"
@@ -36,9 +39,10 @@ class Comment(Base):
         db_table = "comment"
 
 
-class Like(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+class Like(Base):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE,to_field='id', db_column='post_id')
+    user = models.ForeignKey(User, on_delete=models.CASCADE,to_field='id', db_column='user_id')
 
     class Meta:
         unique_together = ("post", "user")
