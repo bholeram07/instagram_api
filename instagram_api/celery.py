@@ -9,4 +9,4 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE','instagram_api.settings')
 app = Celery('instagram_api')
 
 app.config_from_object('django.conf:settings',namespace= 'CELERY')
-app.autodiscover_tasks()
+app.autodiscover_tasks(['user'])
