@@ -5,6 +5,7 @@ from django.utils import timezone
 import uuid
 
 
+
 class Post(Base):
     id = models.UUIDField(primary_key=True,default= uuid.uuid4,editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE,to_field='id', db_column='user_id')

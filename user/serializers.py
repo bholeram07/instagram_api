@@ -270,7 +270,10 @@ class UpdateSerializer(serializers.Serializer):
 
     def validate(self, data):
         new_password = data.get("new_password")
+        current_password = data.get("current_password")
         validate_password(new_password, None)
+        if new_password == current_password :
+            raise ValidationError("The current password and new password can't be same")
         return data
 
 

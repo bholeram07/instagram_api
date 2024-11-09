@@ -17,3 +17,4 @@ class IsUserVerified(BasePermission):
                 return False
 
         return False
+
