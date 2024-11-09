@@ -11,11 +11,14 @@ from .validators import validate_password
 from .utils import *
 from random import randint
 from .models import OtpVerification, Friendship, FriendRequest
+from post_app.models import Post
 
 
 class SignupSerializer(serializers.ModelSerializer):
     """
     _summary_
+     Serializer for signup the user it takes the user's detail and valdiate the differrent paramenters 
+     
 
     Args:
        serializers (ModelSerializer): Django Rest Framework's model serializer
@@ -97,6 +100,9 @@ class SignupSerializer(serializers.ModelSerializer):
 class VerifyOtpSerializer(serializers.Serializer):
     """
     _summary_
+    serialzer for verify the otp that send to the email of the user
+    it takes the otp and return the verified user
+    
 
     Args:
         otp(str): The otp send at the mail of the user
@@ -191,10 +197,13 @@ class ProfileSerializer(serializers.ModelSerializer):
         dict: The validated and serialized user profile data, including id, bio,
             other_social, profile_image, and username fields.
     """
-
+    post_count = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ("id", "bio", "other_social", "profile_image", "username")
+        fields = ("id", "bio", "other_social", "profile_image", "username",'post_count')
+        
+    def get_post_count(self, obj):
+        return Post.objects.filter(user=obj, is_deleted=False).count()  
 
     def update(self, instance, validate_data):
         username = validate_data.get("username", instance.username)
@@ -359,6 +368,15 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 class FriendRequestSerializer(serializers.ModelSerializer):
+    """_summary_
+  
+
+    Args:
+        serializers (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     class Meta:
         model = FriendRequest
         fields = ["sender", "reciever", "status"]

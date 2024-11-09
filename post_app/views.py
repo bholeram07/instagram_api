@@ -22,6 +22,7 @@ class PostViewSet(ModelViewSet):
     queryset = Post.objects.filter(is_deleted=False).order_by('-created_at')
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
+    
 
     def list(self, request, user_id=None):
         if user_id:
@@ -47,19 +48,25 @@ class PostViewSet(ModelViewSet):
 
 
 class CommentViewSet(ModelViewSet):
-    queryset = Comment.objects.filter(is_deleted=False).order_by('-created_at')
+    queryset = Comment.objects.filter(is_deleted=False,parent=None).order_by('-created_at')
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrCommentAuthor]
 
     def get_queryset(self):
         post_id = self.kwargs.get("post_id")
         if post_id:
-            return Comment.objects.filter(post_id=post_id,is_deleted = False)
+            return Comment.objects.filter(post_id=post_id,parent = None,is_deleted = False).order_by('-created_at')
+        return Comment.objects.filter(is_deleted=False,parent=None)
        
     def perform_create(self, serializer):
         post_id = self.kwargs.get("post_id")
+        print(post_id)
         post = get_object_or_404(Post, id=post_id)
+        
         parent_id = self.request.data.get("parent")
+        parent_id = self.request.query_params.get("parent")
+        print(f"Request Data: {self.request.data}")
+        print(parent_id)
         parent_comment = None
         if parent_id:
             parent_comment = get_object_or_404(Comment, id=parent_id, post_id=post_id)
@@ -77,7 +84,7 @@ class CommentViewSet(ModelViewSet):
             return Response({"message": "Please Provide Post id"})
         comment = Comment.objects.filter(post_id=post_id, is_deleted=False).order_by('-created_at')
         if not comment.exists():
-            return Response({"Message": "comment not exists for this user"})
+            return Response({"Message": "comment not exists for this post"})
         paginator = CustomPagination(request, comment, page_size=5)
         paginated_data = paginator.paginated_data
         serializer = self.get_serializer(paginated_data, many=True)

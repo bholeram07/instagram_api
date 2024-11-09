@@ -33,8 +33,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/', include('user.urls')),
     path('',include(router.urls)),
-    path('comment/<str:post_id>/',CommentViewSet.as_view({'post': 'create','get':'list'}), name='comment-create'),
-    path('posts/<str:user_id>/user',PostViewSet.as_view({'get': 'list'}), name="get-user-post"),
+    
+    path('post/<str:post_id>/comment/',CommentViewSet.as_view({'post': 'create','get':'list'}), name='comment-create'),
+    path('comment/<str:post_id>/reply/', CommentViewSet.as_view({'post': 'create'}), name='reply-comment'),
+    path('posts/<str:user_id>/user',PostViewSet.as_view({'get':'list'}), name="get-user-post"),
     path('like/<str:post_id>/',LikeView.as_view())
    
     

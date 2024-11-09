@@ -5,14 +5,35 @@ from user.serializers import SignupSerializer
 
 
 class PostSerializer(serializers.ModelSerializer):
+    likes_count = serializers.SerializerMethodField()
+    comments = serializers.SerializerMethodField()
     class Meta:
         model = Post
-        fields = ("title", "content", "image", "id", "user")
-        read_only_fields = ["user"]
+        fields = ("title", "content", "image", "id", "user","likes_count","comments",'created_at')
+        read_only_fields = ["user",'likes_count','comments','created_at']
+        
+    def get_likes_count(self,obj):
+        return Like.objects.filter(post=obj).count()  
+    
+    def get_comments(self,obj):
+        return Comment.objects.filter(post = obj).count()
+    
 
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
         return super().create(validated_data)
+    
+    def to_representation(self, instance):
+        """Exclude `likes_count` in POST requests"""
+        representation = super().to_representation(instance)
+        request = self.context.get("request")
+        if request and (request.method == "POST" or request.method == "PUT"):
+            representation.pop("likes_count", None)
+            representation.pop("comments",None)
+       
+           
+        
+        return representation
 
     def update(self, instance, validate_data):
         instance.title = validate_data.get("title", instance.title)
@@ -24,8 +45,8 @@ class PostSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
-    user = SignupSerializer(read_only=True)
-    post = PostSerializer(read_only=True)
+    # user = SignupSerializer(read_only=True)
+    # post = PostSerializer(read_only=True)
 
     class Meta:
         model = Comment

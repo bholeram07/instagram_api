@@ -28,7 +28,7 @@ class Comment(Base):
     post = models.ForeignKey(Post, on_delete=models.CASCADE ,to_field='id', db_column='post_id')
     content = models.TextField()
     parent = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies"
+        'self', null=True, blank=True, on_delete=models.CASCADE,related_name='replies'
     )
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
