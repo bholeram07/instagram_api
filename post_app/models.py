@@ -21,6 +21,17 @@ class Post(Base):
     class Meta:
         db_table = "post"
 
+class SavedPost(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_posts')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='saved_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'post')
+
+    def __str__(self):
+        return f"{self.user} saved {self.post}"
+
 
 class Comment(Base):
     id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)

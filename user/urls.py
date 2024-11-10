@@ -15,20 +15,16 @@ urlpatterns = [
         SendResetPasswordEmail.as_view(),
         name="reset-password-send-email",
     ),
+ 
+    path('follow/<str:user_id>/', FollowView.as_view(), name='follow'),
+    
     path(
         "reset-password/<user_id>/<token>/",
         ResetPassword.as_view(),
         name="reset-password",
     ),
-    path(
-        "friends/requests/",
-        FriendRequestView.as_view({"post": "create"}),
-        name="send-friend-request",
-    ),
-    path(
-        "friends/requests/<int:pk>/",
-        FriendRequestView.as_view({"put": "update"}),
-        name="manage-friend-request",
-    ),
-    path("feed/", FeedView.as_view({"get": "list"}), name="user-feed"),
+  
+    path('follow-requests/', FollowRequestListView.as_view(), name='follow-requests-list'),
+    path('follow-request/<int:follow_id>/<str:action>/', FollowRequestActionView.as_view(), name='follow-request-action'),
+   
 ]

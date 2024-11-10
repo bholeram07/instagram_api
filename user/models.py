@@ -50,6 +50,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     profile_image = models.ImageField(upload_to="\post", null=True)
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    is_private = models.BooleanField(default=False, help_text="True if the account is private, False if public")
     is_staff = models.BooleanField(default=False)
 
     last_password_change = models.DateTimeField(null=True, blank=True)
@@ -127,3 +128,20 @@ class Friendship(Base):
    
     class Meta :
        db_table = 'friendship'
+       
+class Follow(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected')
+    ]
+    user = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE)
+    follower = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='accepted')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'follower')
+
+    def __str__(self):
+        return f"{self.follower} follows {self.user}"

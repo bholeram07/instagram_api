@@ -1,18 +1,18 @@
-from .models import Post, Comment, Like
+from .models import Post, Comment, Like, SavedPost
 from rest_framework import serializers
 from rest_framework import request
 from user.serializers import SignupSerializer
 
 
 class PostSerializer(serializers.ModelSerializer):
-    likes_count = serializers.SerializerMethodField()
+    likes = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
     class Meta:
         model = Post
-        fields = ("title", "content", "image", "id", "user","likes_count","comments",'created_at')
-        read_only_fields = ["user",'likes_count','comments','created_at']
+        fields = ("title", "content", "image", "id", "user","likes","comments",'created_at')
+        read_only_fields = ["user",'likes','comments','created_at']
         
-    def get_likes_count(self,obj):
+    def get_likes(self,obj):
         return Like.objects.filter(post=obj).count()  
     
     def get_comments(self,obj):
@@ -41,13 +41,23 @@ class PostSerializer(serializers.ModelSerializer):
         instance.image = validate_data.get("image", instance.image)
         instance.save()
         return instance
+    
+
+class SavedPostSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+    post = serializers.StringRelatedField()
+    class Meta:
+        model = SavedPost
+        fields = ['user', 'post', 'created_at']
+    
+
+
+    
 
 
 class CommentSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
-    # user = SignupSerializer(read_only=True)
-    # post = PostSerializer(read_only=True)
-
+   
     class Meta:
         model = Comment
         fields = ['id', 'content', 'post', 'replies', 'user']

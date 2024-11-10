@@ -21,6 +21,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from post_app import views
+from post_app.views import SavedPostView
 
 from post_app.views import PostViewSet,CommentViewSet,LikeView
 router = DefaultRouter()
@@ -37,7 +38,9 @@ urlpatterns = [
     path('post/<str:post_id>/comment/',CommentViewSet.as_view({'post': 'create','get':'list'}), name='comment-create'),
     path('comment/<str:post_id>/reply/', CommentViewSet.as_view({'post': 'create'}), name='reply-comment'),
     path('posts/<str:user_id>/user',PostViewSet.as_view({'get':'list'}), name="get-user-post"),
-    path('like/<str:post_id>/',LikeView.as_view())
+    path('like/<str:post_id>/',LikeView.as_view()),
+    path('save-post/<str:post_id>/', SavedPostView.as_view(), name='save-post'),
+    path('saved-posts/', SavedPostView.as_view(), name='saved-posts-list')
    
     
 ]

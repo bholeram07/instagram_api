@@ -10,7 +10,9 @@ import re
 from .validators import validate_password
 from .utils import *
 from random import randint
-from .models import OtpVerification, Friendship, FriendRequest
+from .models import OtpVerification, Friendship, FriendRequest,Follow
+from post_app.models import Post
+
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -127,12 +129,11 @@ class VerifyOtpSerializer(serializers.Serializer):
         user = otp_record.user
         if user.is_verified==True:
             return ValidationError("User Already verified")
+        
         user.is_verified = True
         print(user.is_verified)
 
         user.save()
-
-        # otp_record.delete()
 
         return data
 
@@ -192,13 +193,21 @@ class ProfileSerializer(serializers.ModelSerializer):
         dict: The validated and serialized user profile data, including id, bio,
             other_social, profile_image, and username fields.
     """
-    post_count = serializers.SerializerMethodField()
+    posts = serializers.SerializerMethodField()
+    followers = serializers.SerializerMethodField()
+    following = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ("id", "bio", "other_social", "profile_image", "username",'post_count')
+        fields = ("id", "bio", "other_social", "profile_image", "username",'posts','is_private','followers','following')
         
-    def get_post_count(self, obj):
+    def get_posts(self, obj):
         return Post.objects.filter(user=obj, is_deleted=False).count()  
+    
+    def get_followers(self, obj):
+        return obj.followers.count()
+
+    def get_following(self, obj):
+        return obj.following.count()
 
     def update(self, instance, validate_data):
         username = validate_data.get("username", instance.username)
@@ -392,3 +401,11 @@ class FriendshipSerializer(serializers.ModelSerializer):
     def get_friend(self, obj):
         request_user = self.context.get("request").user
         return obj.user2 if obj.user1 == request_user else obj.user1
+    
+class FollowSerializer(serializers.ModelSerializer):
+    follower = serializers.StringRelatedField()  
+    user = serializers.StringRelatedField()    
+
+    class Meta:
+        model = Follow
+        fields = ['id', 'follower', 'user', 'created_at', 'status']

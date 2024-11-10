@@ -72,14 +72,20 @@ class VerifyOtp(APIView):
  
 class UserProfile(APIView):
     permission_classes =[IsAuthenticated]
-    def get(self,request):
-        user = request.user
-        if user:
-            serializer = ProfileSerializer(user)            
-            return Response({"user": serializer.data}, status=status.HTTP_200_OK)
-        return Response(
+    def get(self,request,user_id = None):
+        if not user_id:
+            user = request.user
+            if user:
+                serializer = ProfileSerializer(user)            
+                return Response({"user": serializer.data}, status=status.HTTP_200_OK)
+            return Response(
             {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-        )    
+            )   
+        else:
+            user = User.objects.get(id=user_id)
+            serializer = UserProfileSerializer(user)
+            return Response(serializer.data)
+ 
     
     def put(self,request):
         user = request.user
@@ -98,7 +104,7 @@ class UserProfile(APIView):
             
 
 class Login(APIView):
-    # permission_classes = [IsUserVerified]
+    permission_classes = [IsUserVerified]
     def post(self, request):
         serializers = LoginSerializer(data=request.data)
         if serializers.is_valid():
@@ -214,71 +220,112 @@ class Logout(APIView):
             })
 
 
-class FriendRequestView(viewsets.ViewSet):
+class FollowRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        user_to_follow = get_object_or_404(User, id=user_id)
+        if user_to_follow.is_private:
+            follow, created = Follow.objects.get_or_create(
+                user=user_to_follow,
+                follower=request.user,
+                defaults={'status': 'pending'}
+            )
+            if not created:
+                return Response({"message": "Follow request already sent."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Follow request sent."}, status=status.HTTP_201_CREATED)
+        else:
+            follow, created = Follow.objects.get_or_create(
+                user=user_to_follow,
+                follower=request.user,
+                defaults={'status': 'accepted'}
+            )
+            return Response({"message": "You are now following this user."}, status=status.HTTP_201_CREATED)
+
+
+class FollowRequestUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, follow_request_id, action):
+        follow_request = get_object_or_404(Follow, id=follow_request_id, user=request.user, status='pending')
+
+        if action == 'accept':
+            follow_request.status = 'accepted'
+            follow_request.save()
+            return Response({"message": "Follow request accepted."}, status=status.HTTP_200_OK)
+        elif action == 'reject':
+            follow_request.status = 'rejected'
+            follow_request.save()
+            return Response({"message": "Follow request rejected."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+
+
+
+
+class FollowView(APIView):
     permission_classes = [IsAuthenticated]
     
-    def list(self, request):
+    def post(self, request, user_id):
+     
+        followed_user = get_object_or_404(User, id=user_id)
+        follower_user = request.user
+
+        if follower_user == followed_user:
+            return Response({"detail": "You cannot follow yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+      
+        if followed_user.is_private:
+        
+            if Follow.objects.filter(follower=follower_user, followed=followed_user).exists():
+                return Response({"detail": "Follow request already sent."}, status=status.HTTP_400_BAD_REQUEST)
+
+          
+            Follow.objects.create(follower=follower_user, followed=followed_user, status='pending')
+            return Response({"detail": "Follow request sent."}, status=status.HTTP_201_CREATED)
+        else:
+            
+            if Follow.objects.filter(follower=follower_user, followed=followed_user).exists():
+                return Response({"detail": "You are already following this user."}, status=status.HTTP_400_BAD_REQUEST)
+
+         
+            Follow.objects.create(follower=follower_user, followed=followed_user)
+            return Response({"detail": "Followed successfully."}, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, user_id):
+        
+        followed_user = get_object_or_404(User, id=user_id)
+        follower_user = request.user
+
+  
+        follow = Follow.objects.filter(follower=follower_user, followed=followed_user).first()
+        if not follow:
+            return Response({"detail": "You are not following this user."}, status=status.HTTP_400_BAD_REQUEST)
+        follow.delete()
+        return Response({"detail": "Unfollowed successfully."}, status=status.HTTP_204_NO_CONTENT)
+    
+    
+class FollowRequestListView(APIView):
+    def get(self, request):
         user = request.user
-        friend_requests = FriendRequest.objects.filter(receiver=user)
-        serializer = FriendRequestSerializer(friend_requests, many=True)
-        return Response(serializer.data)
-
-    def create(self, request):
-        sender = request.user
-        receiver_id = request.data.get('receiver_id')
-        if not receiver_id:
-            return Response({"error": "Receiver ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        reciever = get_object_or_404(User,id=receiver_id)
-        if Friendship.objects.filter(user1=sender, user2=reciever).exists() or Friendship.objects.filter(user1=reciever, user2=sender).exists():
-            return Response({"message": "You are already friends."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if FriendRequest.objects.filter(sender=sender, reciever=reciever, status='pending').exists():
-            return Response({"message": "Request already sent"}, status=status.HTTP_400_BAD_REQUEST)
-
-        FreindRequest.objects.create(sender=sender, reciever=receiver)
-        return Response({"message": "Friend request sent successfully"}, status=status.HTTP_201_CREATED)
+        follow_requests = Follow.objects.filter(user=user, status='pending')
+        serializer = FollowSerializer(follow_requests, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-    def update(self, request, pk=None):
-        
-        friend_request = get_object_or_404(FriendRequest,pk=pk)
-        if friend_request.receiver != request.user:
-            return Response({"error": "Not authorized to respond to this friend request"}, status=status.HTTP_403_FORBIDDEN)
-        
-        action = request.data.get("action")
+class FollowRequestActionView(APIView):
+    def post(self, request, follow_id, action):
+        follow_request = get_object_or_404(Follow, id=follow_id, user=request.user)
 
         if action not in ['accept', 'reject']:
-            return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if action == "accept":
-            friend_request.status = "accepted"
-            friend_request.save()
-
-            Friendship.objects.create(user1=friend_request.sender, user2=friend_request.receiver)
-            return Response({"message": "Friend request accepted"}, status=status.HTTP_200_OK)
+        if action == 'accept':
+            follow_request.status = 'accepted'
+        elif action == 'reject':
+            follow_request.status = 'rejected'
         
-        elif action == "reject":
-            friend_request.status = "rejected"
-            friend_request.save()
-            return Response({"message": "Friend request rejected"}, status=status.HTTP_200_OK)
-
-        request.user.friends.add(friend_request.sender)
-        friend_request.sender.friends.add(request.user)
-
-        return Response({'detail': 'Friend request accepted.'}, status=status.HTTP_200_OK)
-    
-    
-
-class FeedView(ReadOnlyModelViewSet):
-    serializer_class = FriendshipSerializer
-    permission_classes = [IsAuthenticated]
-    
-    def list(self ,request,*args,**kwargs):
-        user = request.user
-        friends = Friendship.objects.filter(models.Q(user1=user) | models.Q(user2=user))
-        
-       
-        friend_posts = Post.objects.filter(user__in=[friend.user2 for friend in friends if friend.user1 == user] + [friend.user1 for friend in friends if friend.user2 == user])
-        serializer = PostSerializer(friend_posts, many =True,context ={'request':request})
-        return Response(serializer.data)
+        follow_request.save()
+        return Response({"detail": f"Follow request {action}ed."}, status=status.HTTP_200_OK)
