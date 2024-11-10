@@ -4,14 +4,13 @@ from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeErr
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework.serializers import ValidationError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from .tasks import send_email
+from .tasks import send_welcome_email
 from django.utils import timezone
 import re
 from .validators import validate_password
 from .utils import *
 from random import randint
 from .models import OtpVerification, Friendship, FriendRequest
-from post_app.models import Post
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -46,7 +45,6 @@ class SignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-    
             "username",
             "first_name",
             "last_name",
@@ -91,9 +89,7 @@ class SignupSerializer(serializers.ModelSerializer):
         user = User.objects.create(**validate_data)
         user.set_password(validate_data["password"])
         user.save()
-        message = f"Hi {user.username},\n\n Welcome to our platform \nThank you for signing up!\n\nBest regards,\n@gkmit"
-        subject = "Welcome Message"
-        send_email(user.id, message, subject)
+        send_welcome_email.delay(user.id)
         return user
 
 
@@ -122,15 +118,14 @@ class VerifyOtpSerializer(serializers.Serializer):
         email = data.get("email")
         otp = data.get("otp")
 
-        # Get the user by email and check OTP
+       
         otp_record = OtpVerification.objects.filter(otp=otp, user__email=email).last()
         print(otp_record)
         if not otp_record or otp_record.otp != otp:
             raise ValidationError("Invalid or expired OTP.")
 
         user = otp_record.user
-        print(user)
-        if user.is_verified:
+        if user.is_verified==True:
             return ValidationError("User Already verified")
         user.is_verified = True
         print(user.is_verified)

@@ -16,12 +16,15 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from .serializers import *
-from .tasks import *
+from .tasks import send_otp_email
 from .models import OtpVerification
 from .utils import generate_otp
 from rest_framework.viewsets import ModelViewSet,ReadOnlyModelViewSet
 from post_app.serializers import PostSerializer
 from post_app.models import Post
+OTP_LIMIT = 5 
+OTP_TIME_LIMIT = timedelta(hours=1)  
+
 
 class Signup(APIView):
     def post(self, request):
@@ -43,8 +46,16 @@ class SendOtp(APIView):
         email = request.data.get("email")
         user = get_object_or_404(User, email= email)
         otp = generate_otp()
-        message = f"Your Otp for the verification mail {otp}"
-        send_email(user.id,message,"Otp for Verification")
+        recent_otps = OtpVerification.objects.filter(
+            user = user,
+            created_at__gte=timezone.now() - OTP_TIME_LIMIT
+        )
+        if recent_otps.count() >= OTP_LIMIT:
+            return Response(
+                {"message": "OTP request limit reached. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+        )
+        send_otp_email.delay(user.id , otp)
         print(otp)
         OtpVerification.objects.create(user=user, otp=otp)
         return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
