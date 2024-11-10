@@ -171,7 +171,7 @@ class SendResetPasswordEmail(APIView):
 
 
 class ResetPassword(APIView):
-    def post(self, request, user_id, token):
+    def put(self, request, user_id, token):
         serializer = ResetPasswordSerializer(
             data=request.data, context={"user_id": user_id, "token": token}
         )
