@@ -174,9 +174,8 @@ class SendResetPasswordEmail(APIView):
             token = PasswordResetTokenGenerator().make_token(user)
             reset_link = f"{request.scheme}://{request.get_host()}/user/password/reset/{user_id}/{token}"
             print(reset_link)
-            body = f"This is your link to reset password: {reset_link}"
-            subject= "Reset Your Password",
-            # send_confirmation_email(user,body,subject)
+           
+            send_reset_password_email(user.id, reset_link)
             return Response({"message": "Password reset link sent successfully."}, status=status.HTTP_200_OK) 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

@@ -45,3 +45,21 @@ def send_otp_email(user_id, otp_code):
         
     except User.DoesNotExist:
         print("User does not exist")
+
+@shared_task
+def send_reset_password_email(user_id, reset_link):
+    user = User.objects.get(id = user_id)
+    subject = "Password Reset Request"
+    html_message = render_to_string(
+        "password_reset_email.html", {"user": user, "reset_link": reset_link}
+    )
+    plain_message = strip_tags(html_message)
+    from_email = "no-reply@yourwebsite.com"
+    
+    send_mail(
+        subject,
+        plain_message,
+        from_email,
+        [user.email],
+        html_message=html_message,
+    )
