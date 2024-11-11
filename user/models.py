@@ -47,7 +47,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     bio = models.TextField(blank=True, null=True)
     other_social = models.CharField(max_length=30, blank=True, null=True)
     links = models.CharField(max_length=30, blank=True, null=True)
-    profile_image = models.ImageField(upload_to="\post", null=True)
+    profile_image = models.ImageField(upload_to="profile/", null=True)
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_private = models.BooleanField(default=False, help_text="True if the account is private, False if public")

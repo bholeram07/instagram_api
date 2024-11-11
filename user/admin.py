@@ -1,12 +1,14 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User
+from post_app.models import Post, Comment, Like
+
 
 
 class CustomUserAdmin(UserAdmin):
     model = User
-    list_display = ("email", "username", "is_staff", "is_active")
-    list_filter = ("is_staff", "is_active")
+    list_display = ("email", "username", "is_staff", "is_active", "id")
+    list_filter = ("is_staff", "is_active", "id")
     fieldsets = (
         (None, {"fields": ("email", "username", "password")}),
         ("Permissions", {"fields": ("is_staff", "is_active")}),
