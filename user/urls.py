@@ -19,7 +19,7 @@ urlpatterns = [
     ),
  
     path('follow/<str:user_id>/', FollowView.as_view(), name='follow'),
-    
+    path('following/<str:user_id>/',FollowingView.as_view(), name = 'following'),
     path(
         "reset-password/<str:user_id>/<str:token>/",
         ResetPassword.as_view(),
@@ -27,6 +27,6 @@ urlpatterns = [
     ),
   
     path('follow-requests/', FollowRequestListView.as_view(), name='follow-requests-list'),
-    path('follow-request/<int:follow_id>/<str:action>/', FollowRequestActionView.as_view(), name='follow-request-action'),
+    path('follow-request/<str:follow_id>/<str:action>/', FollowRequestActionView.as_view(), name='follow-request-action'),
    
 ]

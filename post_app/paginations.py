@@ -31,6 +31,6 @@ class CustomPagination:
                 "total_pages": self.total_pages,
                 "current_page": self.page_number,
                 "page_size": self.page_size,
-                "results": data,
+                "data": data,
             }
         )

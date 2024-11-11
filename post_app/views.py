@@ -35,6 +35,8 @@ class PostViewSet(ModelViewSet):
             post = Post.objects.filter(user_id=user.id, is_deleted=False).order_by(
                 "-created_at"
             )
+            if not post.exists():
+                return Response({"Message": "post not exists for this user"},status = status.HTTP_204_NO_CONTENT)
         paginator = CustomPagination(request, post, page_size=5)
         paginated_data = paginator.paginated_data
         serializer = self.get_serializer(paginated_data, many=True)
