@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: "instagram_api-db"
+    environment:
+      POSTGRES_USER: instagram_user
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: instagram_api
+    ports:
+      - "5432:5432"
+    volumes:
+      # - ./init_sql_scripts/:/docker-entrypoint-initdb.d
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

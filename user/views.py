@@ -13,7 +13,6 @@ from .authentications import get_token_for_user
 from .permissions import IsUserVerified
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
-
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from .serializers import *
@@ -74,7 +73,7 @@ class VerifyOtp(APIView):
             
  
 class UserProfile(APIView):
-    permission_classes =[IsAuthenticated]
+    permission_classes =[IsAuthenticated,IsUserVerified]
     def get(self,request,user_id = None):
         if not user_id:
             user = request.user
@@ -141,9 +140,6 @@ class Login(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-
-
-
 class UpdatePassword(APIView):
     permission_classes = [IsAuthenticated,IsUserVerified]
 
@@ -190,6 +186,7 @@ class SendResetPasswordEmail(APIView):
 
 
 class ResetPassword(APIView):
+    permission_classes = [IsUserVerified]
     def post(self, request, user_id, token):
         serializer = ResetPasswordSerializer(
             data=request.data, context={"user_id": user_id, "token": token}
@@ -224,7 +221,7 @@ class Logout(APIView):
 
 
 class FollowRequestView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsUserVerified]
 
     def post(self, request, user_id):
         user_to_follow = get_object_or_404(User, id=user_id)
@@ -247,7 +244,7 @@ class FollowRequestView(APIView):
 
 
 class FollowRequestUpdateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsUserVerified]
 
     def post(self, request, follow_request_id, action):
         follow_request = get_object_or_404(Follow, id=follow_request_id, user=request.user, status='pending')
@@ -263,13 +260,10 @@ class FollowRequestUpdateView(APIView):
         else:
             return Response({"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
         
-        
-
-
 
 
 class FollowView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsUserVerified]
     
     def post(self, request, user_id):
      
@@ -311,6 +305,8 @@ class FollowView(APIView):
     
     
 class FollowRequestListView(APIView):
+    permission_classes = [IsAuthenticated,IsUserVerified]
+
     def get(self, request):
         user = request.user
         follow_requests = Follow.objects.filter(user=user, status='pending')
@@ -319,6 +315,7 @@ class FollowRequestListView(APIView):
 
 
 class FollowRequestActionView(APIView):
+    permission_classes =[IsAuthenticated,IsUserVerified]
     def post(self, request, follow_id, action):
         follow_request = get_object_or_404(Follow, id=follow_id, user=request.user)
 

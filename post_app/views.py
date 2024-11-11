@@ -147,7 +147,7 @@ class CommentViewSet(ModelViewSet):
             "-created_at"
         )
         if not comment.exists():
-            return Response({"Message": "comment not exists for this post"})
+            return Response({"Message": "comment not exists for this post"},status=status.HTTP_204_NO_CONTENT)
         paginator = CustomPagination(request, comment, page_size=5)
         paginated_data = paginator.paginated_data
         serializer = self.get_serializer(paginated_data, many=True)
