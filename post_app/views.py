@@ -101,14 +101,13 @@ class SavedPostView(APIView):
         if not saved_post:
             return Response(
                 {"detail": "This post is not in your saved list."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_204_NO_CONTENT,
             )
         saved_post.delete()
         return Response(
-            {"Message": "Post unsaved successfully."}, status=status.HTTP_204_NO_CONTENT
+            {"Message": "Post unsaved successfully."}, status=status.HTTP_200_OK
         )
-
-
+    
 class CommentViewSet(ModelViewSet):
     queryset = Comment.objects.filter(is_deleted=False, parent=None).order_by(
         "-created_at"
