@@ -72,6 +72,8 @@ class SavedPostView(APIView):
     def get(self, request):
         user = request.user
         saved_posts = SavedPost.objects.filter(user=user).select_related("post")
+        if not saved_posts.exists():
+                return Response({"Message": "post not exists for this user"},status= status.HTTP_204_NO_CONTENT)
         serializer = SavedPostSerializer(saved_posts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
