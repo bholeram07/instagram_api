@@ -74,8 +74,10 @@ class SavedPostView(APIView):
         saved_posts = SavedPost.objects.filter(user=user).select_related("post")
         if not saved_posts.exists():
                 return Response({"Message": "post not exists for this user"},status= status.HTTP_204_NO_CONTENT)
-        serializer = SavedPostSerializer(saved_posts, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        paginator = CustomPagination(request, saved_posts, page_size=5)
+        paginated_data = paginator.paginated_data
+        serializer = SavedPostSerializer(paginated_data, many=True)
+        return paginator.get_paginated_response({"data": serializer.data})
 
     def post(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
@@ -85,8 +87,7 @@ class SavedPostView(APIView):
             return Response(
                 {"detail": "You have already saved this post."},
                 status=status.HTTP_400_BAD_REQUEST,
-            )
-
+            )        
         saved_post = SavedPost.objects.create(user=user, post=post)
         serializer = SavedPostSerializer(saved_post)
 
@@ -104,7 +105,7 @@ class SavedPostView(APIView):
             )
         saved_post.delete()
         return Response(
-            {"detail": "Post unsaved successfully."}, status=status.HTTP_204_NO_CONTENT
+            {"Message": "Post unsaved successfully."}, status=status.HTTP_204_NO_CONTENT
         )
 
 
