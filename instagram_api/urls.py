@@ -40,6 +40,7 @@ urlpatterns = [
     path('posts/<str:user_id>/user',PostViewSet.as_view({'get':'list'}), name="get-user-post"),
     path('like/<str:post_id>/',LikeView.as_view()),
     path('save-post/<str:post_id>/', SavedPostView.as_view(), name='save-post'),
+    
     path('saved-posts/', SavedPostView.as_view(), name='saved-posts-list')
    
     

@@ -127,7 +127,10 @@ REST_FRAMEWORK = {
         'user.authentications.CustomJwtAuthentication',
     ],
     # 'EXCEPTION_HANDLER': 'post_app.exceptions.custom_exception_handler',
-    'DEFAULT_PAGINATION_CLASS' : 'post_app.paginations.CustomPagination'
+    'DEFAULT_PAGINATION_CLASS' : 'post_app.paginations.CustomPagination',
+    'DEFAULT_PERMISSION_CLASSES' : [
+        'rest_framework.permissions.AllowAny',
+    ],
 }
 
 # Password validation

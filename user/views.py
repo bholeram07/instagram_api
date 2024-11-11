@@ -13,20 +13,23 @@ from .authentications import get_token_for_user
 from .permissions import IsUserVerified
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from .serializers import *
-from .tasks import send_otp_email
+from .tasks import send_otp_email,send_reset_password_email
 from .models import OtpVerification
 from .utils import generate_otp
 from rest_framework.viewsets import ModelViewSet,ReadOnlyModelViewSet
 from post_app.serializers import PostSerializer
 from post_app.models import Post
+from rest_framework.permissions import AllowAny
 OTP_LIMIT = 5 
 OTP_TIME_LIMIT = timedelta(hours=1)  
 
 
 class Signup(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
@@ -83,7 +86,7 @@ class UserProfile(APIView):
             )   
         else:
             user = User.objects.get(id=user_id)
-            serializer = UserProfileSerializer(user)
+            serializer = ProfileSerializer(user)
             return Response(serializer.data)
  
     

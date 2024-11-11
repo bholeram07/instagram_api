@@ -5,6 +5,8 @@ from .views import *
 urlpatterns = [
     path("signup/", Signup.as_view(), name="signup-user"),
     path("profile/", UserProfile.as_view(), name="user-profile"),
+    path("profile/<str:user_id>/",UserProfile.as_view()),
+    
     path("send-otp/", SendOtp.as_view(), name="send-otp"),
     path("verify-otp/", VerifyOtp.as_view(), name="verify-otp"),
     path("login/", Login.as_view(), name="login-user"),
@@ -19,7 +21,7 @@ urlpatterns = [
     path('follow/<str:user_id>/', FollowView.as_view(), name='follow'),
     
     path(
-        "reset-password/<user_id>/<token>/",
+        "reset-password/<str:user_id>/<str:token>/",
         ResetPassword.as_view(),
         name="reset-password",
     ),

@@ -29,7 +29,7 @@ class PostViewSet(ModelViewSet):
                 "-created_at"
             )
             if not post.exists():
-                return Response({"Message": "post not exists for this user"})
+                return Response({"Message": "post not exists for this user"},status= status.HTTP_204_NO_CONTENT)
         else:
             user = request.user
             post = Post.objects.filter(user_id=user.id, is_deleted=False).order_by(
@@ -127,7 +127,7 @@ class CommentViewSet(ModelViewSet):
         parent_id = self.request.data.get("parent")
         parent_id = self.request.query_params.get("parent")
         print(f"Request Data: {self.request.data}")
-        print(parent_id)
+        
         parent_comment = None
         if parent_id:
             parent_comment = get_object_or_404(Comment, id=parent_id, post_id=post_id)
