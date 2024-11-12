@@ -2,7 +2,8 @@ from .models import User
 from rest_framework import serializers
 from django.utils.encoding import smart_str, force_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from rest_framework.serializers import ValidationError
+# from rest_framework.serializers import ValidationError
+from rest_framework.exceptions import ValidationError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from .tasks import send_welcome_email
 from django.utils import timezone
@@ -128,7 +129,7 @@ class VerifyOtpSerializer(serializers.Serializer):
 
         user = otp_record.user
         if user.is_verified==True:
-            return ValidationError("User Already verified")
+            raise ValidationError("User Already verified")
         
         user.is_verified = True
         print(user.is_verified)

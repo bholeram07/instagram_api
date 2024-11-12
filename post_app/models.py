@@ -7,7 +7,7 @@ import uuid
 
 
 class Post(Base):
-    id = models.UUIDField(primary_key=True,default= uuid.uuid4,editable=False)
+    id = models.UUIDField(primary_key=True,default = uuid.uuid4,editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE,to_field='id', db_column='user_id')
     title = models.CharField(max_length=25)
     content = models.TextField()
@@ -22,8 +22,8 @@ class Post(Base):
         db_table = "post"
 
 class SavedPost(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_posts')
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='saved_by')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_by')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='saved_posts')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

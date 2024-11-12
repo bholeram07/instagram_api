@@ -25,8 +25,9 @@ class CustomJwtAuthentication(JWTAuthentication):
             )
             if user.last_password_change and user.last_password_change.tzinfo is None:
                 user.last_password_change = timezone.make_aware(user.last_password_change, timezone.get_current_timezone())
-            if last_password_change < user.last_password_change:
-                raise AuthenticationFailed("You have to login first ")
+            if last_password_change is not None and user.last_password_change is not None:
+                if last_password_change < user.last_password_change :
+                    raise AuthenticationFailed("You have to login first ")
         
         return user
        
