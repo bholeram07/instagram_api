@@ -47,6 +47,7 @@ class PostViewSet(ModelViewSet):
         if post.user != request.user:
             return response(403, error="permission Denied", message="Not authorized")
         post.is_deleted = True
+        post.deleted_at = timezone.now() 
         post.save()
         serializers = PostSerializer(instance=post)
         return response(200, message="Post Deleted", data=serializers.data)
@@ -140,6 +141,7 @@ class CommentViewSet(ModelViewSet):
     def destroy(self, request, pk=None):
         comment = get_object_or_404(Comment, id=pk, user=request.user, is_deleted=False)
         comment.is_deleted = True
+        comment.deleted_at = timezone.now() 
         comment.save()
         serializers = CommentSerializer(instance=comment)
         return response(200, message="Comment Deleted", data=serializers.data)
