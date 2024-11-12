@@ -16,12 +16,12 @@ from .permissions import IsOwnerOrCommentAuthor
 from rest_framework import status
 from .response import response
 from django.utils import timezone
-
+from user.permissions import IsUserVerified
 
 class PostViewSet(ModelViewSet):
     queryset = Post.objects.filter(is_deleted=False).order_by("-created_at")
     serializer_class = PostSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsUserVerified]
 
     def list(self, request, user_id=None):
         if user_id:
@@ -68,7 +68,7 @@ class PostViewSet(ModelViewSet):
 
 
 class SavedPostView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsUserVerified]
 
     def get(self, request):
         user = request.user
@@ -114,7 +114,7 @@ class CommentViewSet(ModelViewSet):
         "-created_at"
     )
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated, IsOwnerOrCommentAuthor]
+    permission_classes = [IsAuthenticated,IsUserVerified]
 
     def get_queryset(self):
         post_id = self.kwargs.get("post_id")
@@ -169,7 +169,7 @@ class CommentViewSet(ModelViewSet):
 
 
 class LikeView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsUserVerified]
 
     def post(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
