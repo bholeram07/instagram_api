@@ -21,17 +21,12 @@ class ResetPasswordTestCase(APITestCase):
             "new_password": "Bhole057p@",
             "confirm_password": "Bhole057p@"
         }
-
         context = {
             "user_id": self.user_id,
             "token": self.token
         }
-
         serializer = ResetPasswordSerializer(data=data, context=context)
-
         self.assertTrue(serializer.is_valid())
-
-        # Ensure password is updated
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("Bhole057p@"))
 
@@ -48,7 +43,6 @@ class ResetPasswordTestCase(APITestCase):
 
         serializer = ResetPasswordSerializer(data=data, context=context)
 
-        # Assert that serializer is invalid due to password mismatch
         self.assertFalse(serializer.is_valid())
         self.assertIn("password does not match with the confirm password", str(serializer.errors))
 
@@ -66,7 +60,5 @@ class ResetPasswordTestCase(APITestCase):
         }
 
         serializer = ResetPasswordSerializer(data=data, context=context)
-
-        # Assert that serializer is invalid due to token mismatch
         with self.assertRaises(ValidationError):
             serializer.is_valid(raise_exception=True)
