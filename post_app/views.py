@@ -18,10 +18,11 @@ from .response import response
 from django.utils import timezone
 from user.permissions import IsUserVerified
 
+
 class PostViewSet(ModelViewSet):
     queryset = Post.objects.filter(is_deleted=False).order_by("-created_at")
     serializer_class = PostSerializer
-    permission_classes = [IsAuthenticated,IsUserVerified]
+    permission_classes = [IsAuthenticated, IsUserVerified]
 
     def list(self, request, user_id=None):
         if user_id:
@@ -29,14 +30,20 @@ class PostViewSet(ModelViewSet):
                 "-created_at"
             )
             if not post.exists():
-                return Response({"Message": "post not exists for this user"},status= status.HTTP_204_NO_CONTENT)
+                return Response(
+                    {"Message": "post not exists for this user"},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
         else:
             user = request.user
             post = Post.objects.filter(user_id=user.id, is_deleted=False).order_by(
                 "-created_at"
             )
             if not post.exists():
-                return Response({"Message": "post not exists for this user"},status = status.HTTP_204_NO_CONTENT)
+                return Response(
+                    {"Message": "post not exists for this user"},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
         paginator = CustomPagination(request, post, page_size=5)
         paginated_data = paginator.paginated_data
         serializer = self.get_serializer(paginated_data, many=True)
@@ -47,7 +54,7 @@ class PostViewSet(ModelViewSet):
         if post.user != request.user:
             return response(403, error="permission Denied", message="Not authorized")
         post.is_deleted = True
-        post.deleted_at = timezone.now() 
+        post.deleted_at = timezone.now()
         post.save()
         serializers = PostSerializer(instance=post)
         return response(200, message="Post Deleted", data=serializers.data)
@@ -68,13 +75,16 @@ class PostViewSet(ModelViewSet):
 
 
 class SavedPostView(APIView):
-    permission_classes = [IsAuthenticated,IsUserVerified]
+    permission_classes = [IsAuthenticated, IsUserVerified]
 
     def get(self, request):
         user = request.user
         saved_posts = SavedPost.objects.filter(user=user).select_related("post")
         if not saved_posts.exists():
-                return Response({"Message": "post not exists for this user"},status= status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"Message": "post not exists for this user"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
         paginator = CustomPagination(request, saved_posts, page_size=5)
         paginated_data = paginator.paginated_data
         serializer = SavedPostSerializer(paginated_data, many=True)
@@ -88,7 +98,7 @@ class SavedPostView(APIView):
             return Response(
                 {"detail": "You have already saved this post."},
                 status=status.HTTP_400_BAD_REQUEST,
-            )        
+            )
         saved_post = SavedPost.objects.create(user=user, post=post)
         serializer = SavedPostSerializer(saved_post)
 
@@ -108,13 +118,14 @@ class SavedPostView(APIView):
         return Response(
             {"Message": "Post unsaved successfully."}, status=status.HTTP_200_OK
         )
-    
+
+
 class CommentViewSet(ModelViewSet):
     queryset = Comment.objects.filter(is_deleted=False, parent=None).order_by(
         "-created_at"
     )
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated,IsUserVerified]
+    permission_classes = [IsAuthenticated, IsUserVerified]
 
     def get_queryset(self):
         post_id = self.kwargs.get("post_id")
@@ -132,7 +143,7 @@ class CommentViewSet(ModelViewSet):
         parent_id = self.request.data.get("parent")
         parent_id = self.request.query_params.get("parent")
         print(f"Request Data: {self.request.data}")
-        
+
         parent_comment = None
         if parent_id:
             parent_comment = get_object_or_404(Comment, id=parent_id, post_id=post_id)
@@ -141,7 +152,7 @@ class CommentViewSet(ModelViewSet):
     def destroy(self, request, pk=None):
         comment = get_object_or_404(Comment, id=pk, user=request.user, is_deleted=False)
         comment.is_deleted = True
-        comment.deleted_at = timezone.now() 
+        comment.deleted_at = timezone.now()
         comment.save()
         serializers = CommentSerializer(instance=comment)
         return response(200, message="Comment Deleted", data=serializers.data)
@@ -153,7 +164,10 @@ class CommentViewSet(ModelViewSet):
             "-created_at"
         )
         if not comment.exists():
-            return Response({"Message": "comment not exists for this post"},status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"Message": "comment not exists for this post"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
         paginator = CustomPagination(request, comment, page_size=5)
         paginated_data = paginator.paginated_data
         serializer = self.get_serializer(paginated_data, many=True)
@@ -169,7 +183,7 @@ class CommentViewSet(ModelViewSet):
 
 
 class LikeView(APIView):
-    permission_classes = [IsAuthenticated,IsUserVerified]
+    permission_classes = [IsAuthenticated, IsUserVerified]
 
     def post(self, request, post_id):
         post = get_object_or_404(Post, id=post_id)
