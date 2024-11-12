@@ -314,22 +314,7 @@ class FollowView(APIView):
             return Response({"detail": "You are not following this user."}, status=status.HTTP_400_BAD_REQUEST)
         follow.delete()
         return Response({"detail": "Unfollowed successfully."}, status=status.HTTP_204_NO_CONTENT)
-    
-class FollowingView(APIView):
-    permission_classes = [IsAuthenticated,IsUserVerified]    
-    def get(self, request, user_id=None):
-        if user_id:
-            following_list = Follow.objects.filter(follower=user_id)
-        else:
-            following_list = Follow.objects.filter(follower=request.user)
         
-        serializer = FollowSerializer(following_list, many=True)
-        return Response({
-            "data": serializer.data,  
-        }, status=status.HTTP_200_OK)
-
-    
-    
 class FollowRequestListView(APIView):
     permission_classes = [IsAuthenticated,IsUserVerified]
 
