@@ -11,8 +11,9 @@ import re
 from .validators import validate_password
 from .utils import *
 from random import randint
-from .models import OtpVerification, Friendship, FriendRequest,Follow
+from .models import OtpVerification,Follow
 from post_app.models import Post
+
 
 
 
@@ -80,12 +81,6 @@ class SignupSerializer(serializers.ModelSerializer):
 
         return data
 
-    def validate_email(self, data):
-        if "gkmit.co" in data:
-            raise ValidationError(
-                "This mail refers to an organization please enter a different mail "
-            )
-        return data
 
     def create(self, validate_data):
         validate_data.pop("confirm_password")
@@ -167,7 +162,6 @@ class SendOtpSerializer(serializers.Serializer):
             raise serializers.ValidationError("User not found with this email.")
         return value
 
-
 class ProfileSerializer(serializers.ModelSerializer):
     """
     _summary_
@@ -205,12 +199,14 @@ class ProfileSerializer(serializers.ModelSerializer):
         return Post.objects.filter(user=obj, is_deleted=False).count()  
     
     def get_followers(self, obj):
-        return obj.followers.count()
+        return obj.follower.count()
 
     def get_following(self, obj):
         return obj.following.count()
 
     def update(self, instance, validate_data):
+        if not validate_data:
+            raise ValidationError({"error" : "provide data to update"})
         username = validate_data.get("username", instance.username)
         if username != instance.username:
             now = timezone.now()
@@ -277,15 +273,16 @@ class UpdateSerializer(serializers.Serializer):
     Returns:
         retuens the validate data email and password of the user
     """
-
-    email = serializers.EmailField()
     current_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
 
     def validate(self, data):
         new_password = data.get("new_password")
         current_password = data.get("current_password")
+        user = self.context['request'].user
         validate_password(new_password, None)
+        if not user.check_password(current_password):
+            raise ValidationError("Password is not valid")
         if new_password == current_password :
             raise ValidationError("The current password and new password can't be same")
         return data
@@ -372,41 +369,13 @@ class ResetPasswordSerializer(serializers.Serializer):
         return attrs
 
 
-class FriendRequestSerializer(serializers.ModelSerializer):
-    """_summary_
-  
-
-    Args:
-        serializers (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    class Meta:
-        model = FriendRequest
-        fields = ["sender", "reciever", "status"]
-        read_only_fields = ["sender", "status"]
-
-    def create(self, validated_data):
-        validated_data["sender"] = self.context["request"].user
-        return super().create(validated_data)
 
 
-class FriendshipSerializer(serializers.ModelSerializer):
-    friends = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Friendship
-        fields = ("friends", "created_at")
-
-    def get_friend(self, obj):
-        request_user = self.context.get("request").user
-        return obj.user2 if obj.user1 == request_user else obj.user1
-    
 class FollowSerializer(serializers.ModelSerializer):
     follower = serializers.StringRelatedField()  
-    user = serializers.StringRelatedField()    
+    following= serializers.StringRelatedField()
+       
 
     class Meta:
         model = Follow
-        fields = ['id', 'follower', 'user', 'created_at', 'status']
+        fields = ['id', 'follower', 'following', 'created_at', 'status']

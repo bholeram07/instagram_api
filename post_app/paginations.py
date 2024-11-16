@@ -1,6 +1,5 @@
 from rest_framework.response import Response
 
-
 class CustomPagination:
     def __init__(self, request, queryset, page_size=5):
         self.request = request
@@ -25,12 +24,13 @@ class CustomPagination:
         return list(self.queryset.all()[start_index:end_index])
 
     def get_paginated_response(self, data):
-        return Response(
-            {
-                "total_records": self.total_records,
-                "total_pages": self.total_pages,
-                "current_page": self.page_number,
-                "page_size": self.page_size,
-                "data": data,
-            }
-        )
+        combined_data = {str(index): item for index, item in enumerate(data,1)}
+        return Response({
+                "data" : combined_data,
+                "pagination":{
+                "total_pages": self.total_pages,  # Corrected
+                "current_page": self.page_number,  # Corrected
+                "page_size": self.page_size, 
+                "total_records": self.total_records,# Corrected     
+                }
+        })

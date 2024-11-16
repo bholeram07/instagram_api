@@ -22,8 +22,8 @@ class Post(Base):
         db_table = "post"
 
 class SavedPost(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_by')
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='saved_posts')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, to_field='id', related_name='saved_by')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE,to_field='id',related_name='saved_posts')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -45,7 +45,7 @@ class Comment(Base):
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.user} comment {self.post}"
+        return self.content
 
     class Meta:
         db_table = "comment"

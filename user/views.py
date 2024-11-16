@@ -1,4 +1,3 @@
-
 from .models import *
 from rest_framework.decorators import APIView
 from rest_framework import status
@@ -16,97 +15,98 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from .serializers import *
-from .tasks import send_otp_email,send_reset_password_email
+from .tasks import send_otp_email, send_reset_password_email
 from .models import OtpVerification
 from .utils import generate_otp
-from rest_framework.viewsets import ModelViewSet,ReadOnlyModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from post_app.serializers import PostSerializer
 from post_app.models import Post
 from rest_framework.permissions import AllowAny
-OTP_LIMIT = 5 
-OTP_TIME_LIMIT = timedelta(hours=1)  
+
+OTP_LIMIT = 5
+OTP_TIME_LIMIT = timedelta(hours=1)
 
 
 class Signup(APIView):
     permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {"user": serializer.data,
-                 "message" : "User Signup Successfully"
-                 }, status=status.HTTP_201_CREATED
+                {"data": serializer.data},
+                status=status.HTTP_201_CREATED,
             )
         else:
             return Response(
                 {"message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
-            
+
+
 class SendOtp(APIView):
-    def post(self , request):
+    def post(self, request):
         email = request.data.get("email")
-        user = get_object_or_404(User, email= email)
+        user = get_object_or_404(User, email=email)
         otp = generate_otp()
         recent_otps = OtpVerification.objects.filter(
-            user = user,
-            created_at__gte=timezone.now() - OTP_TIME_LIMIT
+            user=user, created_at__gte=timezone.now() - OTP_TIME_LIMIT
         )
         if recent_otps.count() >= OTP_LIMIT:
             return Response(
                 {"message": "OTP request limit reached. Please try again later."},
-                status=status.HTTP_429_TOO_MANY_REQUESTS
-        )
-        send_otp_email.delay(user.id , otp)
-        print(otp)
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        send_otp_email.delay(user.id, otp)
         OtpVerification.objects.create(user=user, otp=otp)
         return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
-    
-    
+
+
 class VerifyOtp(APIView):
     def post(self, request):
         serializer = VerifyOtpSerializer(data=request.data)
         if serializer.is_valid():
-            return Response({"message": "OTP verified successfully"}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "OTP verified successfully"}, status=status.HTTP_200_OK
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            
- 
+
 class UserProfile(APIView):
-    permission_classes =[IsAuthenticated,IsUserVerified]
-    def get(self,request,user_id = None):
-        if not user_id:
-            user = request.user
-            if user:
-                serializer = ProfileSerializer(user)            
-                return Response({"user": serializer.data}, status=status.HTTP_200_OK)
-            return Response(
-            {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
-            )   
+    permission_classes = [IsAuthenticated, IsUserVerified]
+
+    def get(self, request, user_id=None):
+        if user_id:
+            # Fetch user by user_id, or return 404 if not found
+            user = get_object_or_404(User, id=user_id)
         else:
-            user = User.objects.get(id=user_id)
-            serializer = ProfileSerializer(user)
-            return Response(serializer.data)
- 
-    
-    def put(self,request):
+            # Fetch the authenticated user's profile
+            user = request.user
+
+        # Serialize the user profile
+        serializer = ProfileSerializer(user)
+        return Response({"data":serializer.data},status=status.HTTP_200_OK)
+
+    def put(self, request):
         user = request.user
         if user:
-            serializer = ProfileSerializer(instance=user ,data=request.data,partial=True)
+            serializer = ProfileSerializer(
+                instance=user, data=request.data, partial=True
+            )
             if serializer.is_valid():
                 serializer.save()
-                return Response({
-                    "Updated-Profile" : serializer.data,
-                    "message" : "Profile Updated",
-                },status=status.HTTP_202_ACCEPTED)
-            return Response({
-                "error" : serializer.errors
+                return Response(
+                    {
+                        "data": serializer.data,
+                    },
+                    status=status.HTTP_202_ACCEPTED,
+                )
+            return Response({"error": serializer.errors})
 
-            })
-            
 
 class Login(APIView):
     permission_classes = [IsUserVerified]
+
     def post(self, request):
         serializers = LoginSerializer(data=request.data)
         if serializers.is_valid():
@@ -116,72 +116,69 @@ class Login(APIView):
             if user:
                 token = get_token_for_user(user)
                 return Response(
-                    {
-                        "refresh": str(token),
+                    {"data":
+                        { "refresh": str(token),
                         "access": str(token.access_token),
-                        "access_token_expiration": token.access_token.payload[
-                            "exp"
-                        ],  
+                        "access_token_expiration": token.access_token.payload["exp"],
                         "refresh_token_expiration": token.payload["exp"],
+                        }
                     }
                 )
             else:
                 return Response(
-                    {
-                        "error" :   "Email or Password is not Valid"      
-                    },
-                    status=status.HTTP_404_NOT_FOUND,
+                    {"error": "Email or Password is not Valid"},
+                    status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
         return Response(
-            {
-                "errors": serializers.errors,
-                "Message" : "Please Verify user email"
-            },
+            {"error": serializers.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+
 class UpdatePassword(APIView):
-    permission_classes = [IsAuthenticated,IsUserVerified]
+    permission_classes = [IsAuthenticated, IsUserVerified]
 
     def put(self, request):
-        serializer = UpdateSerializer(data=request.data)
+        serializer = UpdateSerializer(data=request.data,context = {'request' : request})
         user = request.user
         if serializer.is_valid():
-            if user.check_password(serializer.validated_data["current_password"]):
+            current_password = serializer.validated_data["current_password"]
+            if user.check_password(current_password):
                 user.set_password(serializer.validated_data["new_password"])
-                user.last_password_change = timezone.now()  
+                user.last_password_change = timezone.now()
                 user.save()
 
                 return Response(
                     {"message": "Password updated successfully"},
-                    status=status.HTTP_202_ACCEPTED
+                    status=status.HTTP_202_ACCEPTED,
                 )
             else:
                 return Response(
                     {"error": "Current password is incorrect."},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-       
+
         return Response(
-            {"error": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST
+            {"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
         )
 
 
 class SendResetPasswordEmail(APIView):
     permission_classes = [IsUserVerified]
+
     def post(self, request):
         serializer = SendResetPasswordEmailSerializer(data=request.data)
         if serializer.is_valid():
-            email = serializer.validated_data['email']
+            email = serializer.validated_data["email"]
             user = User.objects.get(email=email)
             user_id = urlsafe_base64_encode(force_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
-            reset_link = f"{request.scheme}://{request.get_host()}/user/password/reset/{user_id}/{token}"
-            print(reset_link)
-           
+            reset_link = f"{request.scheme}://{request.get_host()}/user/reset-password/{user_id}/{token}"
             send_reset_password_email(user.id, reset_link)
-            return Response({"message": "Password reset link sent successfully."}, status=status.HTTP_200_OK) 
+            return Response(
+                {"message": "Password reset link sent successfully."},
+                status=status.HTTP_200_OK,
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -190,9 +187,9 @@ class ResetPassword(APIView):
         serializer = ResetPasswordSerializer(
             data=request.data, context={"user_id": user_id, "token": token}
         )
-        
+
         if serializer.is_valid():
-            
+
             return Response(
                 {"message": "Password Reset Successfully"}, status=status.HTTP_200_OK
             )
@@ -203,24 +200,20 @@ class ResetPassword(APIView):
 
 class Logout(APIView):
     permission_classes = [IsAuthenticated]
-    def post(self,request):
+
+    def post(self, request):
         user = request.user
         if user:
-             user.last_password_change = timezone.now() 
-             user.save()
-             return Response({
-                 'message' :"Successfully Loged out"
+            user.last_password_change = timezone.now()
+            user.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
-             })
-             
-        else :
-            return Response({
-                "message" : "You have to login first for the logout"
-            })
+        else:
+            return Response({"message": "You have to login first for the logout"})
 
 
 class FollowRequestView(APIView):
-    permission_classes = [IsAuthenticated,IsUserVerified]
+    permission_classes = [IsAuthenticated, IsUserVerified]
 
     def post(self, request, user_id):
         user_to_follow = get_object_or_404(User, id=user_id)
@@ -228,115 +221,159 @@ class FollowRequestView(APIView):
             follow, created = Follow.objects.get_or_create(
                 user=user_to_follow,
                 follower=request.user,
-                defaults={'status': 'pending'}
+                defaults={"status": "pending"},
             )
             if not created:
-                return Response({"message": "Follow request already sent."}, status=status.HTTP_400_BAD_REQUEST)
-            return Response({"message": "Follow request sent."}, status=status.HTTP_201_CREATED)
+                return Response(
+                    {"detail": "Follow request already sent."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            return Response(
+                {"detail": "Follow request sent."}, status=status.HTTP_201_CREATED
+            )
         else:
             follow, created = Follow.objects.get_or_create(
                 user=user_to_follow,
                 follower=request.user,
-                defaults={'status': 'accepted'}
+                defaults={"status": "accepted"},
             )
-            return Response({"message": "You are now following this user."}, status=status.HTTP_201_CREATED)
+            return Response(
+                {"detail": "You are now following this user."},
+                status=status.HTTP_201_CREATED,
+            )
 
 
 class FollowRequestUpdateView(APIView):
-    permission_classes = [IsAuthenticated,IsUserVerified]
+    permission_classes = [IsAuthenticated, IsUserVerified]
 
     def post(self, request, follow_request_id, action):
-        follow_request = get_object_or_404(Follow, id=follow_request_id, user=request.user, status='pending')
+        follow_request = get_object_or_404(
+            Follow, id=follow_request_id, user=request.user, status="pending"
+        )
 
-        if action == 'accept':
-            follow_request.status = 'accepted'
+        if action == "accept":
+            follow_request.status = "accepted"
             follow_request.save()
-            return Response({"message": "Follow request accepted."}, status=status.HTTP_200_OK)
-        elif action == 'reject':
-            follow_request.status = 'rejected'
+            return Response(
+                {"detail": "Follow request accepted."}, status=status.HTTP_200_OK
+            )
+        elif action == "reject":
+            follow_request.status = "rejected"
             follow_request.save()
-            return Response({"message": "Follow request rejected."}, status=status.HTTP_200_OK)
+            return Response(
+                {"detail": "Follow request rejected."}, status=status.HTTP_200_OK
+            )
         else:
-            return Response({"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
-        
-
+            return Response(
+                {"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 class FollowView(APIView):
-    permission_classes = [IsAuthenticated,IsUserVerified]
-    
+    permission_classes = [IsAuthenticated, IsUserVerified]
+
     def get(self, request, user_id=None):
-        if user_id:
-            follow_list = Follow.objects.filter(user_id=user_id)
-        else:
-            user = request.user
-            follow_list = Follow.objects.filter(user=user)
-        
-        serializer = FollowSerializer(follow_list, many=True)
-        return Response({
-            "data": serializer.data,  
-        }, status=status.HTTP_200_OK)
-            
-             
+        user = request.user if not user_id else get_object_or_404(User, id=user_id)
+        followers = Follow.objects.filter(following=user)  
+        following = Follow.objects.filter(follower=user)  
+
+        # Serialize the follow relationships
+        followers_serializer = FollowSerializer(followers, many=True)
+        following_serializer = FollowSerializer(following, many=True)
+
+        return Response(
+            {
+                "followers": followers_serializer.data,
+                "following": following_serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
     def post(self, request, user_id):
-     
         followed_user = get_object_or_404(User, id=user_id)
         follower_user = request.user
 
         if follower_user == followed_user:
-            return Response({"detail": "You cannot follow yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "You cannot follow yourself."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-      
         if followed_user.is_private:
-        
-            if Follow.objects.filter(follower=follower_user, user=followed_user).exists():
-                return Response({"detail": "Follow request already sent."}, status=status.HTTP_400_BAD_REQUEST)
+            if Follow.objects.filter(follower=follower_user, following=followed_user, status="pending").exists():
+                return Response(
+                    {"detail": "Follow request already sent."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-          
-            Follow.objects.create(follower=follower_user, user=followed_user, status='pending')
-            return Response({"detail": "Follow request sent."}, status=status.HTTP_201_CREATED)
+            # Create a new follow request with status "pending"
+            Follow.objects.create(
+                follower=follower_user, following=followed_user, status="pending"
+            )
+            return Response(
+                {"detail": "Follow request sent."}, status=status.HTTP_201_CREATED
+            )
         else:
-            
-            if Follow.objects.filter(follower=follower_user, user=followed_user).exists():
-                return Response({"detail": "You are already following this user."}, status=status.HTTP_400_BAD_REQUEST)
+            # For public users, check if the user is already following
+            if Follow.objects.filter(follower=follower_user, following=followed_user).exists():
+                return Response(
+                    {"detail": "You are already following this user."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-         
-            Follow.objects.create(follower=follower_user, user=followed_user)
-            return Response({"detail": "Followed successfully."}, status=status.HTTP_201_CREATED)
+            # Create a new follow record for public users
+            Follow.objects.create(follower=follower_user, following=followed_user)
+            return Response(
+                {"detail": "Followed successfully."}, status=status.HTTP_201_CREATED
+            )
 
     def delete(self, request, user_id):
-        
+        # Unfollow a user
         followed_user = get_object_or_404(User, id=user_id)
         follower_user = request.user
 
-  
-        follow = Follow.objects.filter(follower=follower_user, user=followed_user).first()
+        # Find the follow relationship
+        follow = Follow.objects.filter(follower=follower_user, following=followed_user).first()
+
         if not follow:
-            return Response({"detail": "You are not following this user."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "You are not following this user."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Delete the follow relationship
         follow.delete()
-        return Response({"detail": "Unfollowed successfully."}, status=status.HTTP_204_NO_CONTENT)
-        
+        return Response(
+            {"detail": "Unfollowed successfully."}, status=status.HTTP_204_NO_CONTENT
+        )
+
+
 class FollowRequestListView(APIView):
-    permission_classes = [IsAuthenticated,IsUserVerified]
+    permission_classes = [IsAuthenticated, IsUserVerified]
 
     def get(self, request):
         user = request.user
-        follow_requests = Follow.objects.filter(user=user, status='pending')
+        follow_requests = Follow.objects.filter(user=user, status="pending")
         serializer = FollowSerializer(follow_requests, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class FollowRequestActionView(APIView):
-    permission_classes =[IsAuthenticated,IsUserVerified]
+    permission_classes = [IsAuthenticated, IsUserVerified]
+
     def post(self, request, follow_id, action):
         follow_request = get_object_or_404(Follow, id=follow_id, user=request.user)
 
-        if action not in ['accept', 'reject']:
-            return Response({"detail": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
+        if action not in ["accept", "reject"]:
+            return Response(
+                {"detail": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-        if action == 'accept':
-            follow_request.status = 'accepted'
-        elif action == 'reject':
-            follow_request.status = 'rejected'
-        
+        if action == "accept":
+            follow_request.status = "accepted"
+        elif action == "reject":
+            follow_request.status = "rejected"
+
         follow_request.save()
-        return Response({"detail": f"Follow request {action}ed."}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": f"Follow request {action}."}, status=status.HTTP_200_OK
+        )

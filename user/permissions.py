@@ -15,6 +15,14 @@ class IsUserVerified:
             else:
                 return False  
         return user.is_verified
+    
+    def has_object_permission(self, request, view, obj):
+        # This method checks if the user has permission on a specific object
+        user = request.user
+        # Assuming you want to ensure the user is verified for every comment or object they interact with
+        return user.is_verified
+    
+    
 
 
 

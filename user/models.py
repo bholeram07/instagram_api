@@ -75,7 +75,7 @@ class User(AbstractBaseUser, PermissionsMixin):
                     pass
         super().save(*args, **kwargs)
     def __str__(self):
-        return self.email
+        return self.username
 
 
 class OtpVerification(Base):
@@ -89,45 +89,8 @@ class OtpVerification(Base):
         db_table = 'user_otp'
 
 
-class FriendRequest(Base):
-    id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
-    sender = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="sent_freind_request",to_field='id', db_column='sender_id'
-    )
-    reciever = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="recieved_freind_request",to_field='id', db_column='reciever_id'
-    )
-    status = models.CharField(
-        max_length=10,
-        choices=(
-            ("pending", "PENDING"),
-            ("accepted", "Accepted"),
-            ("rejected", "Rejected"),
-        ),
-        default="pending",
-    )
-
-    def accept(self):
-        Freindship.objects.create(user1=self.sender, user2=self.reciever)
-        self.status = "accepted"
-        self.save()
-
-    def reject(self):
-        self.status = "rejected"
-        self.save()
     
-    class Meta:
-        db_table = 'friend_request'
-
-class Friendship(Base):
-    id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
-    user1 = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="Freind_initiated",to_field='id', db_column='user1_id'
-    )
-    user2 = models.ForeignKey(User, on_delete=models.CASCADE,to_field='id', db_column='user2_id')
-   
-    class Meta :
-       db_table = 'friendship'
+    
        
 class Follow(models.Model):
     STATUS_CHOICES = [
@@ -135,13 +98,14 @@ class Follow(models.Model):
         ('accepted', 'Accepted'),
         ('rejected', 'Rejected')
     ]
-    user = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE)
-    follower = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE)
+    following = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE)
+    follower = models.ForeignKey(User, related_name='follower', on_delete=models.CASCADE)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='accepted')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'follower')
+        unique_together = ('following', 'follower')
+        db_table = "follow"
 
     def __str__(self):
-        return f"{self.follower} follows {self.user}"
+        return f"{self.follower} follows {self.following}"

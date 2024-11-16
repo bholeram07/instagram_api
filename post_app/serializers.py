@@ -51,9 +51,6 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class SavedPostSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
-    post = serializers.StringRelatedField()
-
     class Meta:
         model = SavedPost
         fields = ["user", "post", "created_at"]
@@ -61,28 +58,54 @@ class SavedPostSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
+    parent = serializers.SerializerMethodField()
+    post = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ["id", "content", "post", "replies", "user"]
+        fields = ["id", "content","parent", "post", "replies", "user"]
         read_only_fields = ["user", "post"]
 
     def get_replies(self, obj):
         if obj.replies.exists():
             return CommentSerializer(obj.replies.all(), many=True).data
         return []
+    
+    def get_post(self,obj):
+        return {
+            "post_id": obj.post.id,
+            "title": obj.post.title,
+            "content": obj.post.content,
+        }
 
     def create(self, validated_data):
         request = self.context.get("request")
         validated_data["user"] = request.user
         return super().create(validated_data)
-
-
+    
+    def get_parent(self,obj):
+        return obj.parent.id if obj.parent else None
+    
 class LikeSerializer(serializers.ModelSerializer):
-    user = SignupSerializer(read_only=True)
-    post = PostSerializer(read_only=True)
+    liked_by = serializers.SerializerMethodField()
+    post = serializers.SerializerMethodField()
 
     class Meta:
         model = Like
-        fields = ["created_at", "user", "post"]
-        read_only_fields = ["user", "post"]
+        fields = ["created_at", "post","liked_by_user"]
+        read_only_fields = ["liked_by", "post"]
+
+    def get_post(self, obj):
+        # Return post details: ID, title, content
+        return {
+            "post_id": obj.post.id,
+            "title": obj.post.title,
+            "content": obj.post.content,
+        }
+
+    def get_liked_by_user(self, obj):
+        # Return user details: ID and username
+        return {
+            "user_id": obj.user.id,
+            "username": obj.user.username,
+        }

@@ -72,6 +72,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'user.middleware.uuid_validation.UUIDValidationMiddleware',
+    'post_app.middleware.UUIDValidationMiddleware',
 ]
 
 ROOT_URLCONF = 'instagram_api.urls'
@@ -97,6 +99,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+               
             ],
         },
     },
@@ -121,12 +124,12 @@ DATABASES = {
 }
     
     
-
+APPEND_SLASH =False
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES':[
         'user.authentications.CustomJwtAuthentication',
     ],
-    # 'EXCEPTION_HANDLER': 'post_app.exceptions.custom_exception_handler',
+    
     'DEFAULT_PAGINATION_CLASS' : 'post_app.paginations.CustomPagination',
     'DEFAULT_PERMISSION_CLASSES' : [
         'rest_framework.permissions.AllowAny',
