@@ -267,30 +267,32 @@ class FollowRequestUpdateView(APIView):
             return Response(
                 {"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST
             )
-
 class FollowView(APIView):
     permission_classes = [IsAuthenticated, IsUserVerified]
-
     def get(self, request, user_id=None):
+        """Get followers and following of a user"""
         user = request.user if not user_id else get_object_or_404(User, id=user_id)
-        followers = Follow.objects.filter(following=user)  
-        following = Follow.objects.filter(follower=user)  
+        
+        # Retrieve followers and following
+        followers = Follow.objects.filter(following=user)
+        following = Follow.objects.filter(follower=user)
 
-        # Serialize the follow relationships
-        followers_serializer = FollowSerializer(followers, many=True)
-        following_serializer = FollowSerializer(following, many=True)
+        # Serialize the results, checking for None values
+        followers_data = [{"id": f.follower.id, "username": f.follower.username} for f in followers if f.follower]
+        following_data = [{"id": f.following.id, "username": f.following.username if f.following else "Unknown"} for f in following]
 
-        return Response(
-            {
-                "followers": followers_serializer.data,
-                "following": following_serializer.data,
-            },
-            status=status.HTTP_200_OK,
+        return Response({"data":{
+            "followers": followers_data,
+            "following": following_data,
+        }
+        }
         )
 
+
     def post(self, request, user_id):
-        followed_user = get_object_or_404(User, id=user_id)
+        """Follow a user (send follow request or directly follow)"""
         follower_user = request.user
+        followed_user = get_object_or_404(User, id=user_id)
 
         if follower_user == followed_user:
             return Response(
@@ -298,38 +300,24 @@ class FollowView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if followed_user.is_private:
-            if Follow.objects.filter(follower=follower_user, following=followed_user, status="pending").exists():
-                return Response(
-                    {"detail": "Follow request already sent."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            # Create a new follow request with status "pending"
-            Follow.objects.create(
-                follower=follower_user, following=followed_user, status="pending"
-            )
+        # Check if already following
+        if Follow.objects.filter(follower=follower_user, following=followed_user).exists():
             return Response(
-                {"detail": "Follow request sent."}, status=status.HTTP_201_CREATED
+                {"detail": "You are already following this user."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        else:
-            # For public users, check if the user is already following
-            if Follow.objects.filter(follower=follower_user, following=followed_user).exists():
-                return Response(
-                    {"detail": "You are already following this user."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
 
-            # Create a new follow record for public users
-            Follow.objects.create(follower=follower_user, following=followed_user)
-            return Response(
-                {"detail": "Followed successfully."}, status=status.HTTP_201_CREATED
-            )
+        # Create a follow relationship
+        Follow.objects.create(follower=follower_user, following=followed_user)
+        return Response(
+            {"detail": "Followed successfully."},
+            status=status.HTTP_201_CREATED,
+        )
 
     def delete(self, request, user_id):
-        # Unfollow a user
-        followed_user = get_object_or_404(User, id=user_id)
+        """Unfollow a user"""
         follower_user = request.user
+        followed_user = get_object_or_404(User, id=user_id)
 
         # Find the follow relationship
         follow = Follow.objects.filter(follower=follower_user, following=followed_user).first()
@@ -343,7 +331,8 @@ class FollowView(APIView):
         # Delete the follow relationship
         follow.delete()
         return Response(
-            {"detail": "Unfollowed successfully."}, status=status.HTTP_204_NO_CONTENT
+            {"detail": "Unfollowed successfully."},
+            status=status.HTTP_204_NO_CONTENT,
         )
 
 

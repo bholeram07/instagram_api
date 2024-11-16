@@ -368,13 +368,15 @@ class ResetPasswordSerializer(serializers.Serializer):
         user.save()
         return attrs
 
-
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username']
 
 
 class FollowSerializer(serializers.ModelSerializer):
-    follower = serializers.StringRelatedField()  
-    following= serializers.StringRelatedField()
-       
+    follower = UserSerializer()  # Use the nested UserSerializer for detailed info
+    following = UserSerializer()
 
     class Meta:
         model = Follow

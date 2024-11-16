@@ -73,7 +73,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'user.middleware.uuid_validation.UUIDValidationMiddleware',
-    'post_app.middleware.UUIDValidationMiddleware',
+    # 'post_app.middleware.UUIDValidationMiddleware',
 ]
 
 ROOT_URLCONF = 'instagram_api.urls'

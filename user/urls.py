@@ -30,5 +30,7 @@ urlpatterns = [
   
     path('follow-requests', FollowRequestListView.as_view(), name='follow-requests-list'),
     path('follow-request/<str:follow_id>/<str:action>', FollowRequestActionView.as_view(), name='follow-request-action'),
-   
+    path('users/<uuid:user_id>/followers/', FollowView.as_view(), name='user-followers'),
+    path('users/<uuid:user_id>/follow/', FollowView.as_view(), name='user-follow'),
+    path('users/<uuid:user_id>/unfollow/', FollowView.as_view(), name='user-unfollow'),
 ]
