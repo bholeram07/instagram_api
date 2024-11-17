@@ -60,10 +60,17 @@ class SignupSerializer(serializers.ModelSerializer):
     def validate(self, data):
         username = data.get("username")
         password = data.get("password")
+        email = data.get("email")
         confirm_password = data.get("confirm_password")
+        
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError({"datail" : "This email is already registered"})
+        
+        if User.objects.filter(username=username).exists():
+            raise serializer.ValidationError({"detail" : "Username is already registered"})
 
         if password != confirm_password:
-            raise serializers.ValidationError(
+            raise ValidationError(
                 "password must be equal to the confirm password"
             )
         validate_password(password, username)
@@ -199,10 +206,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         return Post.objects.filter(user=obj, is_deleted=False).count()  
     
     def get_followers(self, obj):
-        return obj.follower.count()
+        return obj.following.count()
 
     def get_following(self, obj):
-        return obj.following.count()
+        return obj.follower.count()
 
     def update(self, instance, validate_data):
         if not validate_data:

@@ -4,8 +4,6 @@ from user.models import Base
 from django.utils import timezone
 import uuid
 
-
-
 class Post(Base):
     id = models.UUIDField(primary_key=True,default = uuid.uuid4,editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE,to_field='id', db_column='user_id')
@@ -17,9 +15,10 @@ class Post(Base):
 
     def __str__(self):
         return self.title
-
+    
     class Meta:
         db_table = "post"
+
 
 class SavedPost(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, to_field='id', related_name='saved_by')

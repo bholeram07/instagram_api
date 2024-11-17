@@ -20,7 +20,7 @@ urlpatterns = [
     ),
  
     path('users/<str:user_id>/follow', FollowView.as_view(), name='follow'),
-    path('users/follow',FollowView.as_view(),name='follow'),
+   
     path('users/<uuid:user_id>/posts',PostViewSet.as_view({'get':'list'}), name="get-user-post"),
     path(
         "reset-password/<str:user_id>/<str:token>",
@@ -28,9 +28,11 @@ urlpatterns = [
         name="reset-password",
     ),
   
-    path('follow-requests', FollowRequestListView.as_view(), name='follow-requests-list'),
-    path('follow-request/<str:follow_id>/<str:action>', FollowRequestActionView.as_view(), name='follow-request-action'),
+    path('users/follow-requests', FollowRequestView.as_view(), name='follow-requests-list'),
     path('users/<uuid:user_id>/followers/', FollowView.as_view(), name='user-followers'),
+    path('users/follow-requests/',FollowRequestView.as_view() , name = 'user-follow-requests'),
+    path('users/<uuid:follow_request_id>/follow-request/<str:action>/',FollowRequestUpdateView.as_view()),
+    path('users/follower/',FollowView.as_view(),name='user-follow'),
     path('users/<uuid:user_id>/follow/', FollowView.as_view(), name='user-follow'),
     path('users/<uuid:user_id>/unfollow/', FollowView.as_view(), name='user-unfollow'),
 ]

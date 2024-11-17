@@ -11,32 +11,29 @@ class IsOwnerOrCommentAuthor(BasePermission):
 
  # Assuming Post and Comment are related to User
 
+
 class IsOwnerOrFollower(BasePermission):
     """
-    Custom permission to allow access based on user account privacy settings.
-    - Public accounts (is_private=False): Anyone can view posts and comments.
-    - Private accounts (is_private=True): Only the owner and their followers can view posts and comments.
+    Custom permission to only allow the owner of a private account or their followers
+    to access their posts and comments.
     """
     def has_permission(self, request, view):
         user = request.user
-        
-        # Case 1: Check if user has 'is_private' field and get privacy status
-        if not hasattr(user, 'is_private'):
-            return False  # User doesn't have the 'is_private' field
+        user_id = view.kwargs.get('user_id')  # Get the user_id from the URL kwargs (if available)
 
-        # Case 2: If the account is public (is_private=False), everyone can view posts and comments
+       
         if not user.is_private:
             return True  # Public accounts allow all requests
 
-        # Case 3: If the account is private (is_private=True), only owner or followers can access posts/comments
+        # Case 2: If the account is private, only followers or the user themselves can access posts/comments
         if user.is_private:
-            # Determine if we are dealing with a post or a comment
+            # Check if the user is trying to access their own content or if they are a follower of the user
             if 'post_id' in view.kwargs:
                 post_id = view.kwargs.get('post_id')
                 try:
                     post = Post.objects.get(id=post_id)
-                    # Check if the current user is the owner or a follower of the post's owner
-                    if post.owner == user or post.owner.followers.filter(id=user.id).exists():
+                    # Check if the current user is the owner of the post or a follower of the post's owner
+                    if post.owner == user or Follow.objects.filter(follower=request.user, following=post.owner, status="accepted").exists():
                         return True
                 except Post.DoesNotExist:
                     return False
@@ -45,11 +42,11 @@ class IsOwnerOrFollower(BasePermission):
                 comment_id = view.kwargs.get('comment_id')
                 try:
                     comment = Comment.objects.get(id=comment_id)
-                    # Check if the current user is the owner or a follower of the comment's author
-                    if comment.author == user or comment.author.followers.filter(id=user.id).exists():
+                    # Check if the current user is the owner of the comment or a follower of the comment's author
+                    if comment.author == user or Follow.objects.filter(follower=request.user, following=comment.author, status="accepted").exists():
                         return True
                 except Comment.DoesNotExist:
                     return False
 
-        # Default Denial: If none of the above conditions are met, deny access
+        # Default Denial: If the account is private and the user is not a follower, deny access
         return False

@@ -73,7 +73,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'user.middleware.uuid_validation.UUIDValidationMiddleware',
-    # 'post_app.middleware.UUIDValidationMiddleware',
+    'post_app.middleware.UUIDValidationMiddleware',
 ]
 
 ROOT_URLCONF = 'instagram_api.urls'
@@ -134,6 +134,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES' : [
         'rest_framework.permissions.AllowAny',
     ],
+    'EXCEPTION_HANDLER': 'your_app_name.exceptions.custom_exception_handler',
 }
 
 # Password validation

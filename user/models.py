@@ -53,6 +53,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_private = models.BooleanField(default=False, help_text="True if the account is private, False if public")
     is_staff = models.BooleanField(default=False)
 
+    
+
+
     last_password_change = models.DateTimeField(null=True, blank=True)
     username_change_count = models.PositiveIntegerField(default=0)
     last_username_change = models.DateTimeField(null=True, blank=True)
@@ -104,7 +107,7 @@ class Follow(models.Model):
         User, related_name='following', on_delete=models.CASCADE,null =True
     )
     status = models.CharField(
-        max_length=10, choices=STATUS_CHOICES, default='pending'
+        max_length=10, choices=STATUS_CHOICES, default='accepted'
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
