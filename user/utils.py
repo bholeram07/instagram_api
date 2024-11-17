@@ -16,11 +16,10 @@ def send_test_mail(data):
         recipient_list=[data["to_email"]],
     )
 
-
 def format_errors(errors):
     """
-    Customize the error message to return a separate line for each error.
-    This function returns a list of errors instead of a single string.
+    Customize the error message format globally.
+    This function flattens the error message list into a string with new lines.
     """
     error_messages = []
 
@@ -29,6 +28,6 @@ def format_errors(errors):
         for message in messages:
             # Add each error message to the list with the field name
             error_messages.append(f"{field}: {message}")
-
-    # Return the list of error messages (not a single string with '\n')
-    return error_messages
+    
+    # Join all error messages with a newline character and return a single string
+    return " ".join(error_messages)

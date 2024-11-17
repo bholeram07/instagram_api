@@ -174,7 +174,7 @@ class UpdatePassword(APIView):
                     {"detail": "Current password is incorrect."},
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
-        error_detail = format_errors(serializer.error)
+        error_detail = format_errors(serializer.errors)
         return Response(
             {"error": error_detail}, status=status.HTTP_400_BAD_REQUEST
         )
