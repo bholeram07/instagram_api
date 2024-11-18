@@ -11,6 +11,15 @@ services:
     volumes:
       # - ./init_sql_scripts/:/docker-entrypoint-initdb.d
       - pgdata:/var/lib/postgresql/data
+  db2:
+    image: postgres:latest
+    container_name: "test-db"
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: test_db
+   
 
 volumes:
   pgdata:
+  testpgdata:
