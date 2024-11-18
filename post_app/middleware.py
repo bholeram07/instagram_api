@@ -17,6 +17,7 @@ class UUIDValidationMiddleware:
         try:
             resolved = resolve(request.path_info)
             url_params = resolved.kwargs 
+            print(f"{url_params = }")
            
         except Exception as e:
             return None 

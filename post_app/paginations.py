@@ -24,13 +24,13 @@ class CustomPagination:
         return list(self.queryset.all()[start_index:end_index])
 
     def get_paginated_response(self, data):
-        combined_data = {str(index): item for index, item in enumerate(data,1)}
+    
         return Response({
-                "data" : combined_data,
-                "pagination":{
+               
                 "total_pages": self.total_pages,  # Corrected
                 "current_page": self.page_number,  # Corrected
                 "page_size": self.page_size, 
-                "total_records": self.total_records,# Corrected     
-                }
+                "total_records": self.total_records,# Corrected
+                "data" : data    
+                
         })

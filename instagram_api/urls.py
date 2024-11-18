@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from user import urls
+from post_app import urls
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
@@ -27,30 +28,31 @@ from post_app.views import PostViewSet,CommentViewSet,LikeViewSet,ReplyCommentVi
 router = DefaultRouter()
 router.register('posts', PostViewSet) 
 # router.register('comments', CommentViewSet)  
-router.register(r'posts/(?P<post_id>\d+)/comments', CommentViewSet, basename='comments')
+# router.register(r'posts/(?P<post_id>\d+)/comments', CommentViewSet, basename='comments')
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('user.urls')),
     path('',include(router.urls)),
+    path('',include('post_app.urls'))
     # path('posts',PostViewSet.as_view({'post':'create','get':'list'})),
-    path('posts/<uuid:post_id>',PostViewSet.as_view({'put':'update','delete':'destroy',})),
-    path('posts/<uuid:post_id>/comment',CommentViewSet.as_view({'post': 'create','get':'list'}), name='comment-create'),
-    path('comments/<uuid:comment_id>/reply',ReplyCommentViewSet.as_view({'post':'create'}), name= 'reply-comment'),
+    # path('posts/<uuid:post_id>',PostViewSet.as_view({'put':'update','delete':'destroy',})),
+    # path('posts/<uuid:post_id>/comment',CommentViewSet.as_view({'post': 'create','get':'list'}), name='comment-create'),
+    # path('comments/<uuid:comment_id>/reply',ReplyCommentViewSet.as_view({'post':'create'}), name= 'reply-comment'),
 
-    path('posts/<uuid:post_id>/like',LikeViewSet.as_view({'post':'create','get':'list'})),
-    path('users/comments',CommentViewSet.as_view({'get':'list'})),
-    path('users/likes',LikeViewSet.as_view({'get' : 'list'})),
+    # path('posts/<uuid:post_id>/like',LikeViewSet.as_view({'post':'create','get':'list'})),
+    # path('users/comments',CommentViewSet.as_view({'get':'list'})),
+    # path('users/likes',LikeViewSet.as_view({'get' : 'list'})),
     
     
-    path('posts/<uuid:post_id>/', SavedPostView.as_view(),name = "save-posts"),
-    path('posts/<uuid:post_id>/save', SavedPostView.as_view(), name='save-post'),
-    path('posts/save', SavedPostView.as_view(), name='save-posts'),
+    # path('posts/<uuid:post_id>/', SavedPostView.as_view(),name = "save-posts"),
+    # path('posts/<uuid:post_id>/save', SavedPostView.as_view(), name='save-post'),
+    # path('posts/save', SavedPostView.as_view(), name='save-posts'),
 
-    #retrieve comments fby post id 
-    path('posts/<uuid:post_id>/comments/<uuid:comment_id>/',CommentViewSet.as_view({'put': 'update','delete': 'destroy','get':'retrieve'})),
-    path('comments/<uuid:comment_id>/',CommentViewSet.as_view({'get' : 'retrieve','put' : 'update' , 'delete': 'destroy'}))
+    # #retrieve comments fby post id 
+    # path('posts/<uuid:post_id>/comments/<uuid:comment_id>/',CommentViewSet.as_view({'put': 'update','delete': 'destroy','get':'retrieve'})),
+    # path('comments/<uuid:comment_id>/',CommentViewSet.as_view({'get' : 'retrieve','put' : 'update' , 'delete': 'destroy'}))
     
 ]
 

@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 class PostViewSet(ModelViewSet):
     queryset = Post.objects.filter(is_deleted=False).order_by("-created_at")
     serializer_class = PostSerializer
-    permission_classes = [IsAuthenticated, IsUserVerified,IsOwnerOrFollower]
+    permission_classes = [IsAuthenticated, IsUserVerified]
+    lookup_field = 'id'
 
     def list(self, request, user_id=None):
         if user_id:
@@ -60,8 +61,8 @@ class PostViewSet(ModelViewSet):
         logger.info(f"Retrieved post: {instance}")
         return Response({"data": serializer.data})
 
-    def destroy(self, request, post_id=None):
-        post = get_object_or_404(Post, id=post_id, user=request.user, is_deleted=False)
+    def destroy(self, request, id=None):
+        post = get_object_or_404(Post, id=id, user=request.user, is_deleted=False)
         if post.user != request.user:
             return Response({
                 "detail": "Unauthorized"
@@ -80,8 +81,8 @@ class PostViewSet(ModelViewSet):
         else:
             return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, post_id=None):
-        post = get_object_or_404(Post, id=post_id, user=request.user, is_deleted=False)
+    def update(self, request, id=None):
+        post = get_object_or_404(Post, id=id, user=request.user, is_deleted=False)
         if post.user != request.user:
             raise PermissionDenied("Not authorized to update this post")
 
@@ -147,8 +148,9 @@ class CommentViewSet(ModelViewSet):
         "-created_at"
     )
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated, IsUserVerified,IsOwnerOrFollower]
+    permission_classes = [IsAuthenticated, IsUserVerified]
     lookup_field = 'comment_id'
+    # lookup_field = 'post_id'
 
     def get_queryset(self):
         post_id = self.kwargs.get("post_id")
@@ -226,7 +228,7 @@ class CommentViewSet(ModelViewSet):
         comment_id = self.kwargs.get('comment_id')
         if post_id:
             post = get_object_or_404(Post,id = post_id,user= request.user,is_deleted=False)
-            comment = get_object_or_404(Comment,post = post_id,user = request.user, is_deleted= False)
+            # comment = get_object_or_404(Comment,post = post_id,user = request.user, is_deleted= False)
         comment = get_object_or_404(Comment, id=comment_id, is_deleted=False)
         serializer = self.get_serializer(comment, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
