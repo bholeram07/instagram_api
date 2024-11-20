@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 APPEND_SLASH = False
 ALLOWED_HOSTS = []
 
@@ -121,16 +121,25 @@ DATABASES = {
         'HOST': os.environ.get('HOST'),
         'PORT': os.environ.get('PORT'),
     },
-
-    'TEST':{
-       'ENGINE': 'django.db.backends.postgresql',
+    'test':{
+         
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': os.environ.get('TEST_DATABASE_NAME'),
         'USER': os.environ.get('TEST_DATABASE_USER'),
-        'PASSWORD': os.environ.get('TEST_DATABASE_PASSWORD'),
+        # 'PASSWORD': os.environ.get('TEST_DATABASE_PASSWORD'),
         'HOST': os.environ.get('HOST'),
-        'PORT': os.environ.get('PORT')
+        'PORT': '3306',
+        'TEST': {
+            'NAME': os.environ.get('TEST_DATABASE_NAME'),  # Specify the test database name
+            'DEPENDENCIES': [],  # Avoid circular dependencies
+        },
+    
+    }
 }
-}
+
+
+
+
 
     
     

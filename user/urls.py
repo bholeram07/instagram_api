@@ -5,7 +5,7 @@ from post_app.views import PostViewSet
 
 
 urlpatterns = [
-    path("signup", Signup.as_view(), name="signup-user"),
+    path("signup", Signup.as_view(), name="signup"),
     path("users/profile", UserProfile.as_view(), name="user-profile"),
     path("users/<str:user_id>/profile",UserProfile.as_view()),
     path("users/<str:user_id>/posts",PostViewSet.as_view({'get':'list'})),
