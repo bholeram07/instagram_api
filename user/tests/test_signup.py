@@ -12,6 +12,7 @@ def user_data():
         'username': 'testuser',
         'password': 'Bhole057p@',
         'email': 'testuser@example.com',
+        'is_verified': True
     }
    
     user = User.objects.create(**user_data)
